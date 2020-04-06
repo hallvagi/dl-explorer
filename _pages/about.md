@@ -4,10 +4,4 @@ title: About Me
 permalink: /about/
 ---
 
-This is where you put the contents of your *About* page. Like all your pages, it's in [Markdown](https://guides.github.com/features/mastering-markdown/) format.
-
-This website is powered by **[fastpages](https://github.com/fastai/fastpages)** [^1].
-
-
-
-[^1]:a blogging platform that natively supports Jupyter notebooks in addition to other formats.
+Hi, I'm Hallvar. I’m really interested in deep learning and data science, and in this blog I'll try to explain the concepts and methods I'm currently working on. My main reason for blogging is that I believe writing is a very useful part of the learning process. Writing forces you to be honest about your limits of understanding and knowledge.

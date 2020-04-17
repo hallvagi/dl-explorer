@@ -562,7 +562,22 @@ tensor([[ 0.0000,  0.0000,  0.0000],
     
     
 <div class="cell border-box-sizing code_cell rendered">
+<details class="description" open="">
+      <summary class="btn btn-sm" data-open="Hide Code" data-close="Show Code"></summary>
+        <p></p>
+<div class="input">
 
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="c1">#collapse-show</span>
+<span class="n">AWD_LSTM</span><span class="p">(</span><span class="n">vocab_sz</span><span class="o">=</span><span class="mi">10_000</span><span class="p">,</span> <span class="n">emb_sz</span><span class="o">=</span><span class="mi">400</span><span class="p">,</span> <span class="n">n_hid</span><span class="o">=</span><span class="mi">1152</span><span class="p">,</span> <span class="n">n_layers</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+</pre></div>
+
+    </div>
+</div>
+</div>
+
+    </details>
 <div class="output_wrapper">
 <div class="output">
 
@@ -588,6 +603,70 @@ tensor([[ 0.0000,  0.0000,  0.0000],
   (hidden_dps): ModuleList(
     (0): RNNDropout()
     (1): RNNDropout()
+  )
+)</pre>
+</div>
+
+</div>
+
+</div>
+</div>
+
+</div>
+    
+
+    
+    
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="c1">#collapse-output</span>
+<span class="n">AWD_LSTM</span><span class="p">(</span><span class="n">vocab_sz</span><span class="o">=</span><span class="mi">10_000</span><span class="p">,</span> <span class="n">emb_sz</span><span class="o">=</span><span class="mi">400</span><span class="p">,</span> <span class="n">n_hid</span><span class="o">=</span><span class="mi">1152</span><span class="p">,</span> <span class="n">n_layers</span><span class="o">=</span><span class="mi">5</span><span class="p">)</span>
+</pre></div>
+
+    </div>
+</div>
+</div>
+
+<div class="output_wrapper">
+<div class="output">
+
+<div class="output_area">
+
+
+
+<div class="output_text output_subarea output_execute_result">
+<pre>AWD_LSTM(
+  (encoder): Embedding(10000, 400, padding_idx=1)
+  (encoder_dp): EmbeddingDropout(
+    (emb): Embedding(10000, 400, padding_idx=1)
+  )
+  (rnns): ModuleList(
+    (0): WeightDropout(
+      (module): LSTM(400, 1152, batch_first=True)
+    )
+    (1): WeightDropout(
+      (module): LSTM(1152, 1152, batch_first=True)
+    )
+    (2): WeightDropout(
+      (module): LSTM(1152, 1152, batch_first=True)
+    )
+    (3): WeightDropout(
+      (module): LSTM(1152, 1152, batch_first=True)
+    )
+    (4): WeightDropout(
+      (module): LSTM(1152, 400, batch_first=True)
+    )
+  )
+  (input_dp): RNNDropout()
+  (hidden_dps): ModuleList(
+    (0): RNNDropout()
+    (1): RNNDropout()
+    (2): RNNDropout()
+    (3): RNNDropout()
+    (4): RNNDropout()
   )
 )</pre>
 </div>
@@ -1306,11 +1385,54 @@ tensor([[ 0.0000,  0.0000,  0.0000],
 
 <div class="inner_cell">
     <div class="input_area">
-<div class=" highlight hl-ipython3"><pre><span></span><span class="c1">#hide_output</span>
-<span class="n">learn</span><span class="o">.</span><span class="n">model</span>
+<div class=" highlight hl-ipython3"><pre><span></span><span class="n">learn</span><span class="o">.</span><span class="n">model</span>
 </pre></div>
 
     </div>
+</div>
+</div>
+
+<div class="output_wrapper">
+<div class="output">
+
+<div class="output_area">
+
+
+
+<div class="output_text output_subarea output_execute_result">
+<pre>SequentialRNN(
+  (0): AWD_LSTM(
+    (encoder): Embedding(7080, 400, padding_idx=1)
+    (encoder_dp): EmbeddingDropout(
+      (emb): Embedding(7080, 400, padding_idx=1)
+    )
+    (rnns): ModuleList(
+      (0): WeightDropout(
+        (module): LSTM(400, 1152, batch_first=True)
+      )
+      (1): WeightDropout(
+        (module): LSTM(1152, 1152, batch_first=True)
+      )
+      (2): WeightDropout(
+        (module): LSTM(1152, 400, batch_first=True)
+      )
+    )
+    (input_dp): RNNDropout()
+    (hidden_dps): ModuleList(
+      (0): RNNDropout()
+      (1): RNNDropout()
+      (2): RNNDropout()
+    )
+  )
+  (1): LinearDecoder(
+    (decoder): Linear(in_features=400, out_features=7080, bias=True)
+    (output_dp): RNNDropout()
+  )
+)</pre>
+</div>
+
+</div>
+
 </div>
 </div>
 
@@ -1328,22 +1450,17 @@ tensor([[ 0.0000,  0.0000,  0.0000],
     
     
 <div class="cell border-box-sizing code_cell rendered">
-<details class="description">
-      <summary class="btn btn-sm" data-open="Hide Code" data-close="Show Code"></summary>
-        <p></p>
 <div class="input">
 
 <div class="inner_cell">
     <div class="input_area">
-<div class=" highlight hl-ipython3"><pre><span></span><span class="c1">#collapse</span>
-<span class="n">learn</span><span class="o">.</span><span class="n">summary</span><span class="p">()</span>
+<div class=" highlight hl-ipython3"><pre><span></span><span class="n">learn</span><span class="o">.</span><span class="n">summary</span><span class="p">()</span>
 </pre></div>
 
     </div>
 </div>
 </div>
 
-    </details>
 <div class="output_wrapper">
 <div class="output">
 
@@ -1403,15 +1520,11 @@ Callbacks:
     
     
 <div class="cell border-box-sizing code_cell rendered">
-<details class="description">
-      <summary class="btn btn-sm" data-open="Hide Code" data-close="Show Code"></summary>
-        <p></p>
 <div class="input">
 
 <div class="inner_cell">
     <div class="input_area">
-<div class=" highlight hl-ipython3"><pre><span></span><span class="c1">#collapse</span>
-<span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">learn</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">state_dict</span><span class="p">()</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+<div class=" highlight hl-ipython3"><pre><span></span><span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">learn</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">state_dict</span><span class="p">()</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
     <span class="nb">print</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="s1">'</span><span class="se">\t</span><span class="s1">'</span><span class="p">,</span> <span class="n">learn</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">state_dict</span><span class="p">()[</span><span class="n">key</span><span class="p">]</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
 </pre></div>
 
@@ -1419,7 +1532,6 @@ Callbacks:
 </div>
 </div>
 
-    </details>
 <div class="output_wrapper">
 <div class="output">
 

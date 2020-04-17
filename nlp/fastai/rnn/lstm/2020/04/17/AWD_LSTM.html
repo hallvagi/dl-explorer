@@ -1,0 +1,1617 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1"><!-- Begin Jekyll SEO tag v2.6.1 -->
+<title>A code first inspection of the AWD-LSTM | Deep learning explorer</title>
+<meta name="generator" content="Jekyll v4.0.0" />
+<meta property="og:title" content="A code first inspection of the AWD-LSTM" />
+<meta property="og:locale" content="en_US" />
+<meta name="description" content="AWD-LSTM is a special kind of recurrent neural network that is useful for language models. How can we set it up and customize it with the fastai library?" />
+<meta property="og:description" content="AWD-LSTM is a special kind of recurrent neural network that is useful for language models. How can we set it up and customize it with the fastai library?" />
+<link rel="canonical" href="https://hallvagi.github.io/dl-explorer/nlp/fastai/rnn/lstm/2020/04/17/AWD_LSTM.html" />
+<meta property="og:url" content="https://hallvagi.github.io/dl-explorer/nlp/fastai/rnn/lstm/2020/04/17/AWD_LSTM.html" />
+<meta property="og:site_name" content="Deep learning explorer" />
+<meta property="og:image" content="https://hallvagi.github.io/dl-explorer/images/some_folder/your_image.png" />
+<meta property="og:type" content="article" />
+<meta property="article:published_time" content="2020-04-17T00:00:00-05:00" />
+<script type="application/ld+json">
+{"description":"AWD-LSTM is a special kind of recurrent neural network that is useful for language models. How can we set it up and customize it with the fastai library?","@type":"BlogPosting","headline":"A code first inspection of the AWD-LSTM","dateModified":"2020-04-17T00:00:00-05:00","datePublished":"2020-04-17T00:00:00-05:00","image":"https://hallvagi.github.io/dl-explorer/images/some_folder/your_image.png","mainEntityOfPage":{"@type":"WebPage","@id":"https://hallvagi.github.io/dl-explorer/nlp/fastai/rnn/lstm/2020/04/17/AWD_LSTM.html"},"url":"https://hallvagi.github.io/dl-explorer/nlp/fastai/rnn/lstm/2020/04/17/AWD_LSTM.html","@context":"https://schema.org"}</script>
+<!-- End Jekyll SEO tag -->
+<link rel="stylesheet" href="/dl-explorer/assets/css/style.css"><link type="application/atom+xml" rel="alternate" href="https://hallvagi.github.io/dl-explorer/feed.xml" title="Deep learning explorer" /><link rel="shortcut icon" type="image/x-icon" href="/dl-explorer/images/favicon.ico"><!-- Begin Jekyll SEO tag v2.6.1 -->
+<title>A code first inspection of the AWD-LSTM | Deep learning explorer</title>
+<meta name="generator" content="Jekyll v4.0.0" />
+<meta property="og:title" content="A code first inspection of the AWD-LSTM" />
+<meta property="og:locale" content="en_US" />
+<meta name="description" content="AWD-LSTM is a special kind of recurrent neural network that is useful for language models. How can we set it up and customize it with the fastai library?" />
+<meta property="og:description" content="AWD-LSTM is a special kind of recurrent neural network that is useful for language models. How can we set it up and customize it with the fastai library?" />
+<link rel="canonical" href="https://hallvagi.github.io/dl-explorer/nlp/fastai/rnn/lstm/2020/04/17/AWD_LSTM.html" />
+<meta property="og:url" content="https://hallvagi.github.io/dl-explorer/nlp/fastai/rnn/lstm/2020/04/17/AWD_LSTM.html" />
+<meta property="og:site_name" content="Deep learning explorer" />
+<meta property="og:image" content="https://hallvagi.github.io/dl-explorer/images/some_folder/your_image.png" />
+<meta property="og:type" content="article" />
+<meta property="article:published_time" content="2020-04-17T00:00:00-05:00" />
+<script type="application/ld+json">
+{"description":"AWD-LSTM is a special kind of recurrent neural network that is useful for language models. How can we set it up and customize it with the fastai library?","@type":"BlogPosting","headline":"A code first inspection of the AWD-LSTM","dateModified":"2020-04-17T00:00:00-05:00","datePublished":"2020-04-17T00:00:00-05:00","image":"https://hallvagi.github.io/dl-explorer/images/some_folder/your_image.png","mainEntityOfPage":{"@type":"WebPage","@id":"https://hallvagi.github.io/dl-explorer/nlp/fastai/rnn/lstm/2020/04/17/AWD_LSTM.html"},"url":"https://hallvagi.github.io/dl-explorer/nlp/fastai/rnn/lstm/2020/04/17/AWD_LSTM.html","@context":"https://schema.org"}</script>
+<!-- End Jekyll SEO tag -->
+
+<link href="https://unpkg.com/@primer/css/dist/primer.css" rel="stylesheet" />
+<link rel="stylesheet" href="//use.fontawesome.com/releases/v5.0.7/css/all.css"><link type="application/atom+xml" rel="alternate" href="https://hallvagi.github.io/dl-explorer/feed.xml" title="Deep learning explorer" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.11.1/dist/katex.min.css" integrity="sha384-zB1R0rpPzHqg7Kpt0Aljp8JPLqbXI3bhnPWROx27a9N0Ll6ZP/+DiW/UqRcLbRjq" crossorigin="anonymous">
+    <script type="text/javascript" async src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-MML-AM_CHTML"> </script>
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.11.1/dist/katex.min.js" integrity="sha384-y23I5Q6l+B6vatafAwxRu/0oK/79VlbSz7Q9aiSZUvyWYIYsd+qj+o24G5ZU2zJz" crossorigin="anonymous"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.11.1/dist/contrib/auto-render.min.js" integrity="sha384-kWPLUVMOks5AQFrykwIup5lo0m3iMkkHrD0uJ4H5cjeGihAutqP0yW0J6dpFiVkI" crossorigin="anonymous"></script>
+    <script>
+    document.addEventListener("DOMContentLoaded", function() {
+        renderMathInElement( document.body, {
+        delimiters: [
+            {left: "$$", right: "$$", display: true},
+            {left: "[%", right: "%]", display: true},
+            {left: "$", right: "$", display: false}
+        ]}
+        );
+    });
+    </script>
+
+
+<script>
+function wrap_img(fn) {
+    if (document.attachEvent ? document.readyState === "complete" : document.readyState !== "loading") {
+        var elements = document.querySelectorAll(".post img");
+        Array.prototype.forEach.call(elements, function(el, i) {
+            if (el.getAttribute("title")) {
+                const caption = document.createElement('figcaption');
+                var node = document.createTextNode(el.getAttribute("title"));
+                caption.appendChild(node);
+                const wrapper = document.createElement('figure');
+                wrapper.className = 'image';
+                el.parentNode.insertBefore(wrapper, el);
+                el.parentNode.removeChild(el);
+                wrapper.appendChild(el);
+                wrapper.appendChild(caption);
+            }
+        });
+    } else { document.addEventListener('DOMContentLoaded', fn); }
+}
+window.onload = wrap_img;
+</script>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function(){
+    // add link icon to anchor tags
+    var elem = document.querySelectorAll(".anchor-link")
+    elem.forEach(e => (e.innerHTML = '<i class="fas fa-link fa-xs"></i>'));
+    });
+</script>
+</head><body><header class="site-header">
+
+  <div class="wrapper"><a class="site-title" rel="author" href="/dl-explorer/">Deep learning explorer</a><nav class="site-nav">
+        <input type="checkbox" id="nav-trigger" class="nav-trigger" />
+        <label for="nav-trigger">
+          <span class="menu-icon">
+            <svg viewBox="0 0 18 15" width="18px" height="15px">
+              <path d="M18,1.484c0,0.82-0.665,1.484-1.484,1.484H1.484C0.665,2.969,0,2.304,0,1.484l0,0C0,0.665,0.665,0,1.484,0 h15.032C17.335,0,18,0.665,18,1.484L18,1.484z M18,7.516C18,8.335,17.335,9,16.516,9H1.484C0.665,9,0,8.335,0,7.516l0,0 c0-0.82,0.665-1.484,1.484-1.484h15.032C17.335,6.031,18,6.696,18,7.516L18,7.516z M18,13.516C18,14.335,17.335,15,16.516,15H1.484 C0.665,15,0,14.335,0,13.516l0,0c0-0.82,0.665-1.483,1.484-1.483h15.032C17.335,12.031,18,12.695,18,13.516L18,13.516z"/>
+            </svg>
+          </span>
+        </label>
+
+        <div class="trigger"><a class="page-link" href="/dl-explorer/about/">About Me</a><a class="page-link" href="/dl-explorer/search/">Search</a><a class="page-link" href="/dl-explorer/categories/">Tags</a></div>
+      </nav></div>
+</header>
+<main class="page-content" aria-label="Content">
+      <div class="wrapper">
+        <article class="post h-entry" itemscope itemtype="http://schema.org/BlogPosting">
+
+  <header class="post-header">
+    <h1 class="post-title p-name" itemprop="name headline">A code first inspection of the AWD-LSTM</h1><p class="page-description">AWD-LSTM is a special kind of recurrent neural network that is useful for language models. How can we set it up and customize it with the fastai library?</p><p class="post-meta post-meta-title"><time class="dt-published" datetime="2020-04-17T00:00:00-05:00" itemprop="datePublished">
+        Apr 17, 2020
+      </time>
+       • <span class="read-time" title="Estimated read time">
+    
+    
+      12 min read
+    
+</span></p>
+
+    
+      <p class="category-tags"><i class="fas fa-tags category-tags-icon"></i></i> 
+      
+        <a class="category-tags-link" href="/dl-explorer/categories/#NLP">NLP</a>
+        &nbsp;
+      
+        <a class="category-tags-link" href="/dl-explorer/categories/#fastai">fastai</a>
+        &nbsp;
+      
+        <a class="category-tags-link" href="/dl-explorer/categories/#RNN">RNN</a>
+        &nbsp;
+      
+        <a class="category-tags-link" href="/dl-explorer/categories/#LSTM">LSTM</a>
+        
+      
+      </p>
+    
+
+    
+      
+        <div class="pb-5 d-flex flex-wrap flex-justify-end">
+          <div class="px-2">
+
+    <a href="https://github.com/hallvagi/dl-explorer/tree/master/_notebooks/2020-04-17-AWD_LSTM.ipynb" role="button" target="_blank">
+<img class="notebook-badge-image" src="/dl-explorer/assets/badges/github.svg" alt="View On GitHub">
+    </a>
+</div>
+
+          <div class="px-2">
+    <a href="https://mybinder.org/v2/gh/hallvagi/dl-explorer/master?filepath=_notebooks%2F2020-04-17-AWD_LSTM.ipynb" target="_blank">
+        <img class="notebook-badge-image" src="/dl-explorer/assets/badges/binder.svg" alt="Open In Binder"/>
+    </a>
+</div>
+
+          <div class="px-2">
+    <a href="https://colab.research.google.com/github/hallvagi/dl-explorer/blob/master/_notebooks/2020-04-17-AWD_LSTM.ipynb" target="_blank">
+        <img class="notebook-badge-image" src="/dl-explorer/assets/badges/colab.svg" alt="Open In Colab"/>
+    </a>
+</div>
+        </div>
+      </header>
+
+  <div class="post-content e-content" itemprop="articleBody">
+    <ul class="section-nav">
+<li class="toc-entry toc-h1"><a href="#ULMFiT">ULMFiT </a></li>
+<li class="toc-entry toc-h1"><a href="#How-to-set-up-an-AWD-LSTM-with-fastai">How to set up an AWD-LSTM with fastai </a>
+<ul>
+<li class="toc-entry toc-h2"><a href="#But-what-is-an-embedding?">But what is an embedding? </a></li>
+<li class="toc-entry toc-h2"><a href="#Compostion-of-the-RNN-layers">Compostion of the RNN-layers </a></li>
+<li class="toc-entry toc-h2"><a href="#nn.LSTM">nn.LSTM </a></li>
+<li class="toc-entry toc-h2"><a href="#WeightDropout">WeightDropout </a></li>
+<li class="toc-entry toc-h2"><a href="#RNN-dropout">RNN dropout </a></li>
+</ul>
+</li>
+<li class="toc-entry toc-h1"><a href="#IMDb-inspection">IMDb inspection </a></li>
+</ul><!--
+#################################################
+### THIS FILE WAS AUTOGENERATED! DO NOT EDIT! ###
+#################################################
+# file to edit: _notebooks/2020-04-17-AWD_LSTM.ipynb
+-->
+
+<div class="container" id="notebook-container">
+        
+    
+    
+<div class="cell border-box-sizing code_cell rendered">
+
+</div>
+    
+
+    
+    
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="kn">from</span> <span class="nn">fastai2.text.all</span> <span class="kn">import</span> <span class="o">*</span>
+</pre></div>
+
+    </div>
+</div>
+</div>
+
+</div>
+    
+
+<div class="cell border-box-sizing text_cell rendered">
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<h1 id="ULMFiT">
+<a class="anchor" href="#ULMFiT" aria-hidden="true"><span class="octicon octicon-link"></span></a>ULMFiT<a class="anchor-link" href="#ULMFiT"> </a>
+</h1>
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing text_cell rendered">
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<p>In the previous post we explored the <a href="https://github.com/ltgoslo/norec">Norec</a> Norwegian language corpus. We grabbed the reviews for films and TV-shows, parsed the html-text and created labels based on the ratings. In the next few posts I want to use <a href="https://nlp.fast.ai/classification/2018/05/15/introducing-ulmfit.html">ULMFiT</a> and other methods to predict the sentiment of the reviews based on the text.<br>
+ULMFiT has three main steps:</p>
+<ol>
+<li>Train a language model on a large general purpose corpus such as Wikipedia</li>
+<li>Fine-tune the language model on the text your are working with - the style is most likely different than a Wikipedia article</li>
+<li>Combine the encoder of the fine-tuned language model with a linear classifier to predict the class of your text</li>
+</ol>
+
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing text_cell rendered">
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<p>The core of the ULMFiT method is a type of Recurrent neural network (RNN) called <a href="https://arxiv.org/abs/1708.02182">AWD-LSTM</a>. AWD-LSTM is a special kind of Recurrent neural network (RNN) with tuned dropout parameters among other. We need to look into this architecture before we continue with our modeling. For an explanation of what an <em>LSTM</em> actually is i suggest checking out this <a href="https://colah.github.io/posts/2015-08-Understanding-LSTMs/">blog post</a> by Chris Olah. In general, most of Chris' posts and papers are worth reading!</p>
+
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing text_cell rendered">
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<h1 id="How-to-set-up-an-AWD-LSTM-with-fastai">
+<a class="anchor" href="#How-to-set-up-an-AWD-LSTM-with-fastai" aria-hidden="true"><span class="octicon octicon-link"></span></a>How to set up an AWD-LSTM with fastai<a class="anchor-link" href="#How-to-set-up-an-AWD-LSTM-with-fastai"> </a>
+</h1>
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing text_cell rendered">
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<p>Let's first start by inspecting fastai's <code>language_model_learner</code>. It's a learner class designed to be used for language models, and holds both dataloaders and the architecture along with various hyperparameters. We can use the <code>doc()</code> method to show us the <a href="https://dev.fast.ai/text.learner#Learner-convenience-functions">documentation</a>:</p>
+
+</div>
+</div>
+</div>
+    
+    
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="n">doc</span><span class="p">(</span><span class="n">language_model_learner</span><span class="p">)</span>
+</pre></div>
+
+    </div>
+</div>
+</div>
+
+</div>
+    
+
+<div class="cell border-box-sizing text_cell rendered">
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<p>The documentation tells us that we can pass <code>arch = AWD-LSTM</code> and modify the <code>awd_lstm_lm_config</code> to customize the architecture. The config dictionary specifies various hyperparameters and settings inspired by the aforementioned AWD-LSTM paper. By changing this dictionary we can customize our AWD-LSTM to fit our specific needs:</p>
+
+</div>
+</div>
+</div>
+    
+    
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="n">awd_lstm_lm_config</span>
+</pre></div>
+
+    </div>
+</div>
+</div>
+
+<div class="output_wrapper">
+<div class="output">
+
+<div class="output_area">
+
+
+
+<div class="output_text output_subarea output_execute_result">
+<pre>{'emb_sz': 400,
+ 'n_hid': 1152,
+ 'n_layers': 3,
+ 'pad_token': 1,
+ 'bidir': False,
+ 'output_p': 0.1,
+ 'hidden_p': 0.15,
+ 'input_p': 0.25,
+ 'embed_p': 0.02,
+ 'weight_p': 0.2,
+ 'tie_weights': True,
+ 'out_bias': True}</pre>
+</div>
+
+</div>
+
+</div>
+</div>
+
+</div>
+    
+
+<div class="cell border-box-sizing text_cell rendered">
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<p>Let's check the <a href="https://dev.fast.ai/text.models.awdlstm#AWD_LSTM">documentation</a> and source code of the AWD-LSTM class. You can check the source code directly in the notebook by appending a <code>??</code> behind the method name:</p>
+
+</div>
+</div>
+</div>
+    
+    
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-ipython3"><pre><span></span>AWD_LSTM<span class="o">??</span>
+</pre></div>
+
+    </div>
+</div>
+</div>
+
+</div>
+    
+
+<div class="cell border-box-sizing text_cell rendered">
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<p>The source code shows us a few interesting lines we'll look more into in the next few sections:</p>
+<ol>
+<li><code>self.encoder = nn.Embedding(vocab_sz, emb_sz, padding_idx=pad_token)</code></li>
+<li><code>self.rnns = nn.ModuleList([self._one_rnn(emb_sz if l == 0 else n_hid, (n_hid if l != n_layers - 1 else emb_sz)//self.n_dir, bidir, weight_p, l) for l in range(n_layers)])</code></li>
+<li><code>self.input_dp = RNNDropout(input_p)</code></li>
+<li><code>self.hidden_dps = nn.ModuleList([RNNDropout(hidden_p) for l in range(n_layers)])</code></li>
+</ol>
+
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing text_cell rendered">
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<p></p>
+<div class="flash">
+    <svg class="octicon octicon-info" viewbox="0 0 14 16" version="1.1" width="14" height="16" aria-hidden="true"><path fill-rule="evenodd" d="M6.3 5.69a.942.942 0 01-.28-.7c0-.28.09-.52.28-.7.19-.18.42-.28.7-.28.28 0 .52.09.7.28.18.19.28.42.28.7 0 .28-.09.52-.28.7a1 1 0 01-.7.3c-.28 0-.52-.11-.7-.3zM8 7.99c-.02-.25-.11-.48-.31-.69-.2-.19-.42-.3-.69-.31H6c-.27.02-.48.13-.69.31-.2.2-.3.44-.31.69h1v3c.02.27.11.5.31.69.2.2.42.31.69.31h1c.27 0 .48-.11.69-.31.2-.19.3-.42.31-.69H8V7.98v.01zM7 2.3c-3.14 0-5.7 2.54-5.7 5.68 0 3.14 2.56 5.7 5.7 5.7s5.7-2.55 5.7-5.7c0-3.15-2.56-5.69-5.7-5.69v.01zM7 .98c3.86 0 7 3.14 7 7s-3.14 7-7 7-7-3.12-7-7 3.14-7 7-7z"></path></svg>
+    <strong>Note: </strong>the embedding is called encoder in the code above. The name encoder is also fastai lingo for the entire RNN-part of the architecture. The linear layers added on top for the classifier is called decoder. Neither the ULMFiT or AWD-LSTM paper uses the term encoder or decoder though.
+</div>
+
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing text_cell rendered">
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<h2 id="But-what-is-an-embedding?">
+<a class="anchor" href="#But-what-is-an-embedding?" aria-hidden="true"><span class="octicon octicon-link"></span></a>But what is an embedding?<a class="anchor-link" href="#But-what-is-an-embedding?"> </a>
+</h2>
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing text_cell rendered">
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<p>Once again I'll be lazy and rather refer to another <a href="http://jalammar.github.io/illustrated-word2vec/">blog</a> that explains embeddings in detail. The blog is by Jay Alammar and has explanations of many deep learning and NLP concepts. The essence is that we'll turn each token in our vocabulary into a vector of some size that represents various aspects of that token. The weights of this vector will be trainable and gives our neural network a lot of flexibility in assigning various properties to each token.</p>
+
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing text_cell rendered">
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<p>The embedding is created by: <code>self.encoder = nn.Embedding(vocab_sz, emb_sz, padding_idx=pad_token)</code> Here we see that fastai is built on top of pyTorch and relies on pyTorch's fundamental methods in its own code. The encoder layer is a call to <code>nn.Embedding</code>, see <a href="https://pytorch.org/docs/stable/nn.html#normalization-layers">documentation</a>. Let's create an embedding of size 10x3 with padding_idx = 0:</p>
+
+</div>
+</div>
+</div>
+    
+    
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="n">embedding</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Embedding</span><span class="p">(</span><span class="n">num_embeddings</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span> <span class="n">embedding_dim</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span> <span class="n">padding_idx</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+<span class="n">embedding</span><span class="o">.</span><span class="n">weight</span>
+</pre></div>
+
+    </div>
+</div>
+</div>
+
+<div class="output_wrapper">
+<div class="output">
+
+<div class="output_area">
+
+
+
+<div class="output_text output_subarea output_execute_result">
+<pre>Parameter containing:
+tensor([[ 0.0000,  0.0000,  0.0000],
+        [ 1.6721, -1.3130,  0.6414],
+        [ 1.1675,  0.1174,  1.8511],
+        [-0.3341, -1.0047, -0.8467],
+        [-0.7737, -0.3947, -1.5273],
+        [-1.1472, -0.0429, -0.0994],
+        [-1.0594,  1.3725,  0.3796],
+        [ 0.1682,  0.7212,  0.9494],
+        [ 1.2791,  0.1334, -0.5075],
+        [ 0.4486,  0.4936,  0.2588]], requires_grad=True)</pre>
+</div>
+
+</div>
+
+</div>
+</div>
+
+</div>
+    
+
+<div class="cell border-box-sizing text_cell rendered">
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<p>The embedding now has 10 vectors of length 3 with randomly initialized weights. Note that the first one (index 0) is all 0. This is because 0 is our padding index. Next we'll pass some some sample data <code>inp</code>, and inspect the result. We can think of our input as the index of words in a dictionary. E.g. 1='this', 7='is', 4='not' and 3='easy'. 0 will be our padding token. The padding token is a special token that is used to ensure that some text has a certain length. This is useful when stacking various pieces of text into a batch where sizes needs to match.</p>
+
+</div>
+</div>
+</div>
+    
+    
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="n">inp</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">LongTensor</span><span class="p">([</span><span class="mi">1</span><span class="p">,</span><span class="mi">7</span><span class="p">,</span><span class="mi">4</span><span class="p">,</span><span class="mi">3</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">])</span>
+<span class="n">emb</span> <span class="o">=</span> <span class="n">embedding</span><span class="p">(</span><span class="n">inp</span><span class="p">)</span>
+<span class="n">emb</span>
+</pre></div>
+
+    </div>
+</div>
+</div>
+
+<div class="output_wrapper">
+<div class="output">
+
+<div class="output_area">
+
+
+
+<div class="output_text output_subarea output_execute_result">
+<pre>tensor([[ 1.6721, -1.3130,  0.6414],
+        [ 0.1682,  0.7212,  0.9494],
+        [-0.7737, -0.3947, -1.5273],
+        [-0.3341, -1.0047, -0.8467],
+        [ 0.0000,  0.0000,  0.0000],
+        [ 0.0000,  0.0000,  0.0000]], grad_fn=&lt;EmbeddingBackward&gt;)</pre>
+</div>
+
+</div>
+
+</div>
+</div>
+
+</div>
+    
+
+<div class="cell border-box-sizing text_cell rendered">
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<p>We see that the embedding produced by feeding the input corresponds to the weights of our original embedding. That is, index 1 of <code>inp</code> is the item '7'. So <code>emb[1]</code> is basically a lookup for <code>embedding.weight[7]</code>.</p>
+
+</div>
+</div>
+</div>
+    
+    
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="n">embedding</span><span class="o">.</span><span class="n">weight</span><span class="p">[</span><span class="mi">7</span><span class="p">],</span> <span class="n">emb</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+</pre></div>
+
+    </div>
+</div>
+</div>
+
+<div class="output_wrapper">
+<div class="output">
+
+<div class="output_area">
+
+
+
+<div class="output_text output_subarea output_execute_result">
+<pre>(tensor([0.1682, 0.7212, 0.9494], grad_fn=&lt;SelectBackward&gt;),
+ tensor([0.1682, 0.7212, 0.9494], grad_fn=&lt;SelectBackward&gt;))</pre>
+</div>
+
+</div>
+
+</div>
+</div>
+
+</div>
+    
+
+<div class="cell border-box-sizing text_cell rendered">
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<blockquote>
+<p>To summarize:We'll need an embedding with the number of embeddings equal to our vocabulary size, and embedding size of 400 and a padding token-id which corresponds to whichever token has been used as padding in our vocabulary.</p>
+</blockquote>
+
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing text_cell rendered">
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<h2 id="Compostion-of-the-RNN-layers">
+<a class="anchor" href="#Compostion-of-the-RNN-layers" aria-hidden="true"><span class="octicon octicon-link"></span></a>Compostion of the RNN-layers<a class="anchor-link" href="#Compostion-of-the-RNN-layers"> </a>
+</h2>
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing text_cell rendered">
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<p>Secondly we create a list of RNN-layers with various dimensions:</p>
+<div class="highlight"><pre><span></span><span class="bp">self</span><span class="o">.</span><span class="n">rnns</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">ModuleList</span><span class="p">([</span><span class="bp">self</span><span class="o">.</span><span class="n">_one_rnn</span><span class="p">(</span><span class="n">emb_sz</span> <span class="k">if</span> <span class="n">l</span> <span class="o">==</span> <span class="mi">0</span> <span class="k">else</span> <span class="n">n_hid</span><span class="p">,</span> 
+                         <span class="p">(</span><span class="n">n_hid</span> <span class="k">if</span> <span class="n">l</span> <span class="o">!=</span> <span class="n">n_layers</span> <span class="o">-</span> <span class="mi">1</span> <span class="k">else</span> <span class="n">emb_sz</span><span class="p">)</span><span class="o">//</span><span class="bp">self</span><span class="o">.</span><span class="n">n_dir</span><span class="p">,</span> <span class="n">bidir</span><span class="p">,</span> <span class="n">weight_p</span><span class="p">,</span> <span class="n">l</span><span class="p">)</span> <span class="k">for</span> <span class="n">l</span> <span class="ow">in</span><span class="p">(</span><span class="n">n_layers</span><span class="p">)])</span>
+</pre></div>
+<p>The code stacks RNN-layers of <code>embedding size x hidden size</code> for the first layer, and <code>hidden size x embedding size</code> for the final. Let's verify that this works for various number of layers:</p>
+
+</div>
+</div>
+</div>
+    
+    
+<div class="cell border-box-sizing code_cell rendered">
+<details class="description">
+      <summary class="btn btn-sm" data-open="Hide Code" data-close="Show Code"></summary>
+        <p></p>
+<div class="input">
+
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="c1">#collapse</span>
+<span class="n">AWD_LSTM</span><span class="p">(</span><span class="n">vocab_sz</span><span class="o">=</span><span class="mi">10_000</span><span class="p">,</span> <span class="n">emb_sz</span><span class="o">=</span><span class="mi">400</span><span class="p">,</span> <span class="n">n_hid</span><span class="o">=</span><span class="mi">1152</span><span class="p">,</span> <span class="n">n_layers</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+</pre></div>
+
+    </div>
+</div>
+</div>
+
+    </details>
+<div class="output_wrapper">
+<div class="output">
+
+<div class="output_area">
+
+
+
+<div class="output_text output_subarea output_execute_result">
+<pre>AWD_LSTM(
+  (encoder): Embedding(10000, 400, padding_idx=1)
+  (encoder_dp): EmbeddingDropout(
+    (emb): Embedding(10000, 400, padding_idx=1)
+  )
+  (rnns): ModuleList(
+    (0): WeightDropout(
+      (module): LSTM(400, 1152, batch_first=True)
+    )
+    (1): WeightDropout(
+      (module): LSTM(1152, 400, batch_first=True)
+    )
+  )
+  (input_dp): RNNDropout()
+  (hidden_dps): ModuleList(
+    (0): RNNDropout()
+    (1): RNNDropout()
+  )
+)</pre>
+</div>
+
+</div>
+
+</div>
+</div>
+
+</div>
+    
+
+    
+    
+<div class="cell border-box-sizing code_cell rendered">
+<details class="description">
+      <summary class="btn btn-sm" data-open="Hide Code" data-close="Show Code"></summary>
+        <p></p>
+<div class="input">
+
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="c1">#collapse</span>
+<span class="n">AWD_LSTM</span><span class="p">(</span><span class="n">vocab_sz</span><span class="o">=</span><span class="mi">10_000</span><span class="p">,</span> <span class="n">emb_sz</span><span class="o">=</span><span class="mi">400</span><span class="p">,</span> <span class="n">n_hid</span><span class="o">=</span><span class="mi">1152</span><span class="p">,</span> <span class="n">n_layers</span><span class="o">=</span><span class="mi">5</span><span class="p">)</span>
+</pre></div>
+
+    </div>
+</div>
+</div>
+
+    </details>
+<div class="output_wrapper">
+<div class="output">
+
+<div class="output_area">
+
+
+
+<div class="output_text output_subarea output_execute_result">
+<pre>AWD_LSTM(
+  (encoder): Embedding(10000, 400, padding_idx=1)
+  (encoder_dp): EmbeddingDropout(
+    (emb): Embedding(10000, 400, padding_idx=1)
+  )
+  (rnns): ModuleList(
+    (0): WeightDropout(
+      (module): LSTM(400, 1152, batch_first=True)
+    )
+    (1): WeightDropout(
+      (module): LSTM(1152, 1152, batch_first=True)
+    )
+    (2): WeightDropout(
+      (module): LSTM(1152, 1152, batch_first=True)
+    )
+    (3): WeightDropout(
+      (module): LSTM(1152, 1152, batch_first=True)
+    )
+    (4): WeightDropout(
+      (module): LSTM(1152, 400, batch_first=True)
+    )
+  )
+  (input_dp): RNNDropout()
+  (hidden_dps): ModuleList(
+    (0): RNNDropout()
+    (1): RNNDropout()
+    (2): RNNDropout()
+    (3): RNNDropout()
+    (4): RNNDropout()
+  )
+)</pre>
+</div>
+
+</div>
+
+</div>
+</div>
+
+</div>
+    
+
+<div class="cell border-box-sizing text_cell rendered">
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<p>We see the first and final layers have similar dimensions in the two examples.</p>
+<blockquote>
+<p>To summarize:We'll use a 3 layer network with input and output dimensions of (400, 1152), (1152, 1152) and (1152, 400) as in the AWD-LSTM paper. This should be handled automatically by the library.</p>
+</blockquote>
+
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing text_cell rendered">
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<h2 id="nn.LSTM">
+<a class="anchor" href="#nn.LSTM" aria-hidden="true"><span class="octicon octicon-link"></span></a>nn.LSTM<a class="anchor-link" href="#nn.LSTM"> </a>
+</h2>
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing text_cell rendered">
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<p>In the module list above, the layers are actually WeightDropout layers. We can verify this from the hidden constructor method that is called when the RNNs are being created. First, a regular <code>nn.LSTM</code> layer is created before being passed to the <code>WeightDropout</code> module.</p>
+<div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">_one_rnn</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">n_in</span><span class="p">,</span> <span class="n">n_out</span><span class="p">,</span> <span class="n">bidir</span><span class="p">,</span> <span class="n">weight_p</span><span class="p">,</span> <span class="n">l</span><span class="p">):</span>
+    <span class="s2">"Return one of the inner rnn"</span>
+    <span class="n">rnn</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">LSTM</span><span class="p">(</span><span class="n">n_in</span><span class="p">,</span> <span class="n">n_out</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">batch_first</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">bidirectional</span><span class="o">=</span><span class="n">bidir</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">WeightDropout</span><span class="p">(</span><span class="n">rnn</span><span class="p">,</span> <span class="n">weight_p</span><span class="p">)</span>
+</pre></div>
+
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing text_cell rendered">
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<p>Lets have a look at an example from the <a href="https://pytorch.org/docs/stable/nn.html#lstm">nn.LSTM documentation</a>, also see <a href="https://pytorch.org/docs/stable/_modules/torch/nn/modules/rnn.html#LSTM">source code here</a>. We'll make a 1 layer LSTM with input size of 10 and hidden size of 20. Note that in the AWD-LSTM case the input size is equal to the embedding size (400 by default).</p>
+
+</div>
+</div>
+</div>
+    
+    
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="n">inp_s</span> <span class="o">=</span> <span class="mi">10</span> <span class="c1"># input size</span>
+<span class="n">hid_s</span> <span class="o">=</span> <span class="mi">20</span> <span class="c1"># hidden size</span>
+</pre></div>
+
+    </div>
+</div>
+</div>
+
+</div>
+    
+
+    
+    
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="n">lstm</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">LSTM</span><span class="p">(</span><span class="n">input_size</span> <span class="o">=</span> <span class="n">inp_s</span><span class="p">,</span> <span class="n">hidden_size</span> <span class="o">=</span> <span class="n">hid_s</span><span class="p">,</span> <span class="n">num_layers</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+</pre></div>
+
+    </div>
+</div>
+</div>
+
+</div>
+    
+
+<div class="cell border-box-sizing text_cell rendered">
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<p>The documentation details that the LSTM expects input in the form of <code>input(seq_len, batch, input_size)</code>. Seq_len is the length of the part of the text the model will see in each iteration (seq_len = 72 by default in fastais language_model_learner, that is 72 tokens). The batch size is the number of documents the models sees in each iteration.</p>
+<p>h0 and c0 are the inital hidden and cell states (set to 0 if not provided). The documentation specifiy their shapes as: <code>(num_layers * num_directions, batch, hidden_size)</code>.</p>
+
+</div>
+</div>
+</div>
+    
+    
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="n">bs</span> <span class="o">=</span> <span class="mi">16</span>
+<span class="n">n_l</span><span class="p">,</span> <span class="n">n_d</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span> <span class="c1"># we are testing a 1 layer and 1 direction lstm</span>
+<span class="n">seq_len</span> <span class="o">=</span> <span class="mi">5</span>
+</pre></div>
+
+    </div>
+</div>
+</div>
+
+</div>
+    
+
+    
+    
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="n">inp</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">randn</span><span class="p">(</span><span class="n">seq_len</span><span class="p">,</span> <span class="n">bs</span><span class="p">,</span> <span class="n">inp_s</span><span class="p">)</span>
+<span class="n">h0</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">randn</span><span class="p">(</span><span class="n">n_l</span><span class="o">*</span><span class="n">n_d</span><span class="p">,</span> <span class="n">bs</span><span class="p">,</span> <span class="n">hid_s</span><span class="p">)</span>
+<span class="n">c0</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">randn</span><span class="p">(</span><span class="n">n_l</span><span class="o">*</span><span class="n">n_d</span><span class="p">,</span> <span class="n">bs</span><span class="p">,</span> <span class="n">hid_s</span><span class="p">)</span>
+</pre></div>
+
+    </div>
+</div>
+</div>
+
+</div>
+    
+
+    
+    
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="n">inp</span><span class="o">.</span><span class="n">shape</span><span class="p">,</span> <span class="n">h0</span><span class="o">.</span><span class="n">shape</span><span class="p">,</span> <span class="n">c0</span><span class="o">.</span><span class="n">shape</span>
+</pre></div>
+
+    </div>
+</div>
+</div>
+
+<div class="output_wrapper">
+<div class="output">
+
+<div class="output_area">
+
+
+
+<div class="output_text output_subarea output_execute_result">
+<pre>(torch.Size([5, 16, 10]), torch.Size([1, 16, 20]), torch.Size([1, 16, 20]))</pre>
+</div>
+
+</div>
+
+</div>
+</div>
+
+</div>
+    
+
+<div class="cell border-box-sizing text_cell rendered">
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<p>The output from the LSTM should be a tuple of <code>output, (h_n, c_n)</code>where output has shape given by: <code>(seq_len, batch, num_directions * hidden_size)</code>:</p>
+
+</div>
+</div>
+</div>
+    
+    
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="n">out</span><span class="p">,</span> <span class="p">(</span><span class="n">hn</span><span class="p">,</span> <span class="n">cn</span><span class="p">)</span> <span class="o">=</span> <span class="n">lstm</span><span class="p">(</span><span class="n">inp</span><span class="p">)</span>
+<span class="n">out</span><span class="o">.</span><span class="n">shape</span>
+</pre></div>
+
+    </div>
+</div>
+</div>
+
+<div class="output_wrapper">
+<div class="output">
+
+<div class="output_area">
+
+
+
+<div class="output_text output_subarea output_execute_result">
+<pre>torch.Size([5, 16, 20])</pre>
+</div>
+
+</div>
+
+</div>
+</div>
+
+</div>
+    
+
+<div class="cell border-box-sizing text_cell rendered">
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<p>Let's also check the actual shape of our weights by looping through the <code>state_dict()</code>:</p>
+
+</div>
+</div>
+</div>
+    
+    
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="p">[(</span><span class="n">key</span><span class="p">,</span> <span class="n">lstm</span><span class="o">.</span><span class="n">state_dict</span><span class="p">()[</span><span class="n">key</span><span class="p">]</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span> <span class="k">for</span>  <span class="n">key</span> <span class="ow">in</span> <span class="n">lstm</span><span class="o">.</span><span class="n">state_dict</span><span class="p">()</span><span class="o">.</span><span class="n">keys</span><span class="p">()]</span>
+</pre></div>
+
+    </div>
+</div>
+</div>
+
+<div class="output_wrapper">
+<div class="output">
+
+<div class="output_area">
+
+
+
+<div class="output_text output_subarea output_execute_result">
+<pre>[('weight_ih_l0', torch.Size([80, 10])),
+ ('weight_hh_l0', torch.Size([80, 20])),
+ ('bias_ih_l0', torch.Size([80])),
+ ('bias_hh_l0', torch.Size([80]))]</pre>
+</div>
+
+</div>
+
+</div>
+</div>
+
+</div>
+    
+
+<div class="cell border-box-sizing text_cell rendered">
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<p>Here we recognize the input size of 10 and hidden size of 20, but where does the 80 come from? The documentation specifiyes that the weights will be of dimension <code>(4*hidden_size, input_size)</code>. The '4' is called gate_size, and we can find this in the source code for the base RNN module also:</p>
+<div class="highlight"><pre><span></span><span class="k">if</span> <span class="n">mode</span> <span class="o">==</span> <span class="s1">'LSTM'</span><span class="p">:</span>
+    <span class="n">gate_size</span> <span class="o">=</span> <span class="mi">4</span> <span class="o">*</span> <span class="n">hidden_size</span>
+</pre></div>
+
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing text_cell rendered">
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<blockquote>
+<p>To summarize:we expect two sets of weights and biases per LSTM: <em> weight_ih_l0 with a shape of (4</em>hidden_size, input_size)</p>
+<ul>
+<li>weight_hh_l0 with a shape of (4*hidden_size, hidden_size)</li>
+<li>bias_ih_l0 with a shape of (4*hidden_size)</li>
+<li>bias_hh_l0 with a shape of (4*hidden_size)</li>
+</ul>
+</blockquote>
+
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing text_cell rendered">
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<h2 id="WeightDropout">
+<a class="anchor" href="#WeightDropout" aria-hidden="true"><span class="octicon octicon-link"></span></a>WeightDropout<a class="anchor-link" href="#WeightDropout"> </a>
+</h2>
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing text_cell rendered">
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<p>We can see from the <code>_one_rnn</code> that the nn.LSTM is transformed to a WeightDropout module. The <a href="https://dev.fast.ai/text.models.awdlstm#WeightDropout">documentation</a> describes the module as 'A module that warps another layer in which some weights will be replaced by 0 during training'. From the source code we can see that it's the <code>weight_hh_l0</code> weights that will be modified, and that these weights are duplicated with suffix 'raw' in the WeightDropout module: <code>self.register_parameter(f'{layer}_raw', nn.Parameter(w.data))</code>.</p>
+
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing text_cell rendered">
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<p>Let's see if we can verify this by first checking the weights from the lstm from the above section. Of the 80*20 = 1600 weights in the hh_l0 layer, none are 0:</p>
+
+</div>
+</div>
+</div>
+    
+    
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="n">orig_wts</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">lstm</span><span class="p">,</span> <span class="s1">'weight_hh_l0'</span><span class="p">)</span>
+<span class="n">orig_wts</span><span class="o">.</span><span class="n">shape</span><span class="p">,</span> <span class="p">(</span><span class="n">orig_wts</span> <span class="o">==</span> <span class="mf">0.</span><span class="p">)</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span>
+</pre></div>
+
+    </div>
+</div>
+</div>
+
+<div class="output_wrapper">
+<div class="output">
+
+<div class="output_area">
+
+
+
+<div class="output_text output_subarea output_execute_result">
+<pre>(torch.Size([80, 20]), tensor(0))</pre>
+</div>
+
+</div>
+
+</div>
+</div>
+
+</div>
+    
+
+<div class="cell border-box-sizing text_cell rendered">
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<p>But if pass the lstm through the WeightDroput module, approximately half of the 1600 weights are set to 0. Note that we have to call the model on the input since the weights are only reset during the forward pass. The weights are also <em>only</em> reset for the WeighDropout's  internal LSTM module, while a copy with suffix '_raw' retains the original weights.</p>
+
+</div>
+</div>
+</div>
+    
+    
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="n">wd</span> <span class="o">=</span> <span class="n">WeightDropout</span><span class="p">(</span><span class="n">lstm</span><span class="p">,</span> <span class="n">weight_p</span><span class="o">=</span><span class="mf">0.5</span><span class="p">)</span>
+<span class="n">_</span><span class="p">,</span><span class="n">_</span> <span class="o">=</span> <span class="n">wd</span><span class="p">(</span><span class="n">inp</span><span class="p">)</span> <span class="c1"># we don't need the output in this case</span>
+</pre></div>
+
+    </div>
+</div>
+</div>
+
+</div>
+    
+
+<div class="cell border-box-sizing text_cell rendered">
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<p>The <code>.module</code> attribute of the <code>wd</code> object is our original LSTM:</p>
+
+</div>
+</div>
+</div>
+    
+    
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="n">wd</span><span class="o">.</span><span class="n">module</span>
+</pre></div>
+
+    </div>
+</div>
+</div>
+
+<div class="output_wrapper">
+<div class="output">
+
+<div class="output_area">
+
+
+
+<div class="output_text output_subarea output_execute_result">
+<pre>LSTM(10, 20)</pre>
+</div>
+
+</div>
+
+</div>
+</div>
+
+</div>
+    
+
+<div class="cell border-box-sizing text_cell rendered">
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<p>And about half its weights have been set to 0:</p>
+
+</div>
+</div>
+</div>
+    
+    
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="p">(</span><span class="nb">getattr</span><span class="p">(</span><span class="n">wd</span><span class="o">.</span><span class="n">module</span><span class="p">,</span> <span class="s1">'weight_hh_l0'</span><span class="p">)</span><span class="o">==</span><span class="mf">0.0</span><span class="p">)</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span>
+</pre></div>
+
+    </div>
+</div>
+</div>
+
+<div class="output_wrapper">
+<div class="output">
+
+<div class="output_area">
+
+
+
+<div class="output_text output_subarea output_execute_result">
+<pre>tensor(826)</pre>
+</div>
+
+</div>
+
+</div>
+</div>
+
+</div>
+    
+
+<div class="cell border-box-sizing text_cell rendered">
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<p>The original weights from the lstm matches the '_raw' weights of the WeightDropout module:</p>
+
+</div>
+</div>
+</div>
+    
+    
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="n">test_eq</span><span class="p">(</span><span class="n">orig_wts</span><span class="p">,</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">wd</span><span class="p">,</span> <span class="s1">'weight_hh_l0_raw'</span><span class="p">))</span>
+</pre></div>
+
+    </div>
+</div>
+</div>
+
+</div>
+    
+
+<div class="cell border-box-sizing text_cell rendered">
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<p>The new layers are as expected:</p>
+
+</div>
+</div>
+</div>
+    
+    
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="n">wd</span><span class="o">.</span><span class="n">state_dict</span><span class="p">()</span><span class="o">.</span><span class="n">keys</span><span class="p">()</span>
+</pre></div>
+
+    </div>
+</div>
+</div>
+
+<div class="output_wrapper">
+<div class="output">
+
+<div class="output_area">
+
+
+
+<div class="output_text output_subarea output_execute_result">
+<pre>odict_keys(['weight_hh_l0_raw', 'module.weight_ih_l0', 'module.bias_ih_l0', 'module.bias_hh_l0'])</pre>
+</div>
+
+</div>
+
+</div>
+</div>
+
+</div>
+    
+
+<div class="cell border-box-sizing text_cell rendered">
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<h2 id="RNN-dropout">
+<a class="anchor" href="#RNN-dropout" aria-hidden="true"><span class="octicon octicon-link"></span></a>RNN dropout<a class="anchor-link" href="#RNN-dropout"> </a>
+</h2>
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing text_cell rendered">
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<p>Finally several RNNDropout layers are being created - one for the input and one for each LSTM. This dropout is applied to the input embedding and on the output of each LSTM. We can test the functionality with <code>inp</code> from the above section.</p>
+
+</div>
+</div>
+</div>
+    
+    
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="n">dp</span> <span class="o">=</span> <span class="n">RNNDropout</span><span class="p">(</span><span class="mf">0.5</span><span class="p">)</span>
+<span class="n">dp_out</span> <span class="o">=</span> <span class="n">dp</span><span class="p">(</span><span class="n">inp</span><span class="p">)</span>
+<span class="n">inp</span><span class="o">.</span><span class="n">shape</span><span class="p">,</span> <span class="n">dp_out</span><span class="o">.</span><span class="n">shape</span>
+</pre></div>
+
+    </div>
+</div>
+</div>
+
+<div class="output_wrapper">
+<div class="output">
+
+<div class="output_area">
+
+
+
+<div class="output_text output_subarea output_execute_result">
+<pre>(torch.Size([5, 16, 10]), torch.Size([5, 16, 10]))</pre>
+</div>
+
+</div>
+
+</div>
+</div>
+
+</div>
+    
+
+<div class="cell border-box-sizing text_cell rendered">
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<p>The documentation also says: 'Dropout with probability p that is consistent on the seq_len dimension.' In our input from the above section, seq_len is the first dimension (index 0), and if we check for items equaling 0 and sum along the second dimension (index 1) we see that the same tokens are dropped out for the entire batch (our sample batch size is 16) consistently in approximately half of the instances.</p>
+
+</div>
+</div>
+</div>
+    
+    
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="p">(</span><span class="n">dp_out</span> <span class="o">==</span> <span class="mi">0</span><span class="p">)</span><span class="o">.</span><span class="n">sum</span><span class="p">((</span><span class="mi">1</span><span class="p">))</span>
+</pre></div>
+
+    </div>
+</div>
+</div>
+
+<div class="output_wrapper">
+<div class="output">
+
+<div class="output_area">
+
+
+
+<div class="output_text output_subarea output_execute_result">
+<pre>tensor([[ 0,  0, 16, 16, 16, 16,  0,  0, 16,  0],
+        [ 0, 16, 16, 16, 16,  0,  0, 16, 16,  0],
+        [ 0,  0,  0, 16,  0,  0,  0,  0, 16, 16],
+        [ 0,  0, 16, 16,  0, 16,  0, 16,  0, 16],
+        [ 0, 16,  0, 16,  0, 16, 16,  0, 16, 16]])</pre>
+</div>
+
+</div>
+
+</div>
+</div>
+
+</div>
+    
+
+<div class="cell border-box-sizing text_cell rendered">
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<h1 id="IMDb-inspection">
+<a class="anchor" href="#IMDb-inspection" aria-hidden="true"><span class="octicon octicon-link"></span></a>IMDb inspection<a class="anchor-link" href="#IMDb-inspection"> </a>
+</h1>
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing text_cell rendered">
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<p>Let's take a look at a minimal IMDB example from the <a href="https://dev.fast.ai/tutorial.datablock#Text">fastai documentation</a> to verify our understanding of the AWD-LSTM architecture.</p>
+
+</div>
+</div>
+</div>
+    
+    
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="n">imdb_path</span> <span class="o">=</span> <span class="n">untar_data</span><span class="p">(</span><span class="n">URLs</span><span class="o">.</span><span class="n">IMDB_SAMPLE</span><span class="p">)</span>
+<span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_csv</span><span class="p">(</span><span class="n">imdb_path</span><span class="o">/</span><span class="s1">'texts.csv'</span><span class="p">)</span>
+<span class="n">dls</span> <span class="o">=</span> <span class="n">TextDataLoaders</span><span class="o">.</span><span class="n">from_df</span><span class="p">(</span><span class="n">df</span><span class="p">,</span> <span class="n">path</span><span class="o">=</span><span class="n">imdb_path</span><span class="p">,</span> <span class="n">text_col</span><span class="o">=</span><span class="s1">'text'</span><span class="p">,</span> <span class="n">is_lm</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">valid_col</span><span class="o">=</span><span class="s1">'is_valid'</span><span class="p">)</span>
+<span class="n">learn</span> <span class="o">=</span> <span class="n">language_model_learner</span><span class="p">(</span><span class="n">dls</span><span class="p">,</span> <span class="n">AWD_LSTM</span><span class="p">)</span>
+</pre></div>
+
+    </div>
+</div>
+</div>
+
+<div class="output_wrapper">
+<div class="output">
+
+<div class="output_area">
+
+
+<div class="output_html rendered_html output_subarea ">
+
+</div>
+
+</div>
+
+</div>
+</div>
+
+</div>
+    
+
+<div class="cell border-box-sizing text_cell rendered">
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<p>The vocab is of length 7080 and vocab index 1 is 'xxpad':</p>
+
+</div>
+</div>
+</div>
+    
+    
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="n">dls</span><span class="o">.</span><span class="n">vocab</span><span class="p">[:</span><span class="mi">5</span><span class="p">],</span> <span class="nb">len</span><span class="p">(</span><span class="n">dls</span><span class="o">.</span><span class="n">vocab</span><span class="p">)</span>
+</pre></div>
+
+    </div>
+</div>
+</div>
+
+<div class="output_wrapper">
+<div class="output">
+
+<div class="output_area">
+
+
+
+<div class="output_text output_subarea output_execute_result">
+<pre>(['xxunk', 'xxpad', 'xxbos', 'xxeos', 'xxfld'], 7080)</pre>
+</div>
+
+</div>
+
+</div>
+</div>
+
+</div>
+    
+
+<div class="cell border-box-sizing text_cell rendered">
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<p>In our model we recognize <code>Embedding(7080, 400, padding_idx=1)</code> as vocab_size x embedding size with the correct padding token. We also see that the (input, output) dimensions of our LSTM-layers are as expected, and with the expected dropout layers added.</p>
+
+</div>
+</div>
+</div>
+    
+    
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="c1">##collapse</span>
+<span class="n">learn</span><span class="o">.</span><span class="n">model</span>
+</pre></div>
+
+    </div>
+</div>
+</div>
+
+<div class="output_wrapper">
+<div class="output">
+
+<div class="output_area">
+
+
+
+<div class="output_text output_subarea output_execute_result">
+<pre>SequentialRNN(
+  (0): AWD_LSTM(
+    (encoder): Embedding(7080, 400, padding_idx=1)
+    (encoder_dp): EmbeddingDropout(
+      (emb): Embedding(7080, 400, padding_idx=1)
+    )
+    (rnns): ModuleList(
+      (0): WeightDropout(
+        (module): LSTM(400, 1152, batch_first=True)
+      )
+      (1): WeightDropout(
+        (module): LSTM(1152, 1152, batch_first=True)
+      )
+      (2): WeightDropout(
+        (module): LSTM(1152, 400, batch_first=True)
+      )
+    )
+    (input_dp): RNNDropout()
+    (hidden_dps): ModuleList(
+      (0): RNNDropout()
+      (1): RNNDropout()
+      (2): RNNDropout()
+    )
+  )
+  (1): LinearDecoder(
+    (decoder): Linear(in_features=400, out_features=7080, bias=True)
+    (output_dp): RNNDropout()
+  )
+)</pre>
+</div>
+
+</div>
+
+</div>
+</div>
+
+</div>
+    
+
+<div class="cell border-box-sizing text_cell rendered">
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<p>The model summary shows us the default batch size of 64 and seq_len of 72.</p>
+
+</div>
+</div>
+</div>
+    
+    
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="c1">##collapse</span>
+<span class="n">learn</span><span class="o">.</span><span class="n">summary</span><span class="p">()</span>
+</pre></div>
+
+    </div>
+</div>
+</div>
+
+<div class="output_wrapper">
+<div class="output">
+
+<div class="output_area">
+
+
+
+<div class="output_text output_subarea output_execute_result">
+<pre>SequentialRNN (Input shape: ['64 x 72'])
+================================================================
+Layer (type)         Output Shape         Param #    Trainable 
+================================================================
+RNNDropout           64 x 72 x 400        0          False     
+________________________________________________________________
+RNNDropout           64 x 72 x 1152       0          False     
+________________________________________________________________
+RNNDropout           64 x 72 x 1152       0          False     
+________________________________________________________________
+Linear               64 x 72 x 7080       2,839,080  True      
+________________________________________________________________
+RNNDropout           64 x 72 x 400        0          False     
+________________________________________________________________
+
+Total params: 2,839,080
+Total trainable params: 2,839,080
+Total non-trainable params: 0
+
+Optimizer used: &lt;function Adam at 0x7fa03d7cbdd0&gt;
+Loss function: FlattenedLoss of CrossEntropyLoss()
+
+Model frozen up to parameter group number 3
+
+Callbacks:
+  - TrainEvalCallback
+  - Recorder
+  - ProgressCallback
+  - ModelReseter
+  - RNNRegularizer</pre>
+</div>
+
+</div>
+
+</div>
+</div>
+
+</div>
+    
+
+<div class="cell border-box-sizing text_cell rendered">
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<p>And finally, the layer names and shapes also is concistent with a gate size of 4 (1152*4 = 4608). Note the enumeration of the layers: <strong>0.</strong> is the encoder part of the architecture (including the embedding called encoder) and <strong>1.</strong> is the decoder. The encoder is specific to the language model, and the decoder is specific to the classifier.</p>
+
+</div>
+</div>
+</div>
+    
+    
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="c1">##collapse</span>
+<span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">learn</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">state_dict</span><span class="p">()</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="s1">'</span><span class="se">\t</span><span class="s1">'</span><span class="p">,</span> <span class="n">learn</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">state_dict</span><span class="p">()[</span><span class="n">key</span><span class="p">]</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
+</pre></div>
+
+    </div>
+</div>
+</div>
+
+<div class="output_wrapper">
+<div class="output">
+
+<div class="output_area">
+
+<div class="output_subarea output_stream output_stdout output_text">
+<pre>0.encoder.weight 	 torch.Size([7080, 400])
+0.encoder_dp.emb.weight 	 torch.Size([7080, 400])
+0.rnns.0.weight_hh_l0_raw 	 torch.Size([4608, 1152])
+0.rnns.0.module.weight_ih_l0 	 torch.Size([4608, 400])
+0.rnns.0.module.bias_ih_l0 	 torch.Size([4608])
+0.rnns.0.module.bias_hh_l0 	 torch.Size([4608])
+0.rnns.1.weight_hh_l0_raw 	 torch.Size([4608, 1152])
+0.rnns.1.module.weight_ih_l0 	 torch.Size([4608, 1152])
+0.rnns.1.module.bias_ih_l0 	 torch.Size([4608])
+0.rnns.1.module.bias_hh_l0 	 torch.Size([4608])
+0.rnns.2.weight_hh_l0_raw 	 torch.Size([1600, 400])
+0.rnns.2.module.weight_ih_l0 	 torch.Size([1600, 1152])
+0.rnns.2.module.bias_ih_l0 	 torch.Size([1600])
+0.rnns.2.module.bias_hh_l0 	 torch.Size([1600])
+1.decoder.weight 	 torch.Size([7080, 400])
+1.decoder.bias 	 torch.Size([7080])
+</pre>
+</div>
+</div>
+
+</div>
+</div>
+
+</div>
+    
+
+</div>
+
+
+
+  </div><!-- from https://github.com/utterance/utterances -->
+<script src="https://utteranc.es/client.js"
+        repo="hallvagi/dl-explorer"
+        issue-term="title"
+        label="blogpost-comment"
+        theme="github-light"
+        crossorigin="anonymous"
+        async>
+</script><a class="u-url" href="/dl-explorer/nlp/fastai/rnn/lstm/2020/04/17/AWD_LSTM.html" hidden></a>
+</article>
+      </div>
+    </main><footer class="site-footer h-card">
+  <data class="u-url" href="/dl-explorer/"></data>
+
+  <div class="wrapper">
+
+    <div class="footer-col-wrapper">
+      <div class="footer-col">
+        <p class="feed-subscribe">
+          <a href="/dl-explorer/feed.xml">
+            <svg class="svg-icon orange">
+              <use xlink:href="/dl-explorer/assets/minima-social-icons.svg#rss"></use>
+            </svg><span>Subscribe</span>
+          </a>
+        </p>
+      </div>
+      <div class="footer-col">
+        <p>Exploring deep learning and data science concepts.</p>
+      </div>
+    </div>
+
+    <div class="social-links"><ul class="social-media-list"><li><a rel="me" href="https://github.com/hallvagi" title="hallvagi"><svg class="svg-icon grey"><use xlink:href="/dl-explorer/assets/minima-social-icons.svg#github"></use></svg></a></li><li><a rel="me" href="https://twitter.com/HallvarGisnas" title="HallvarGisnas"><svg class="svg-icon grey"><use xlink:href="/dl-explorer/assets/minima-social-icons.svg#twitter"></use></svg></a></li><li><a rel="me" href="https://www.youtube.com/c%2FHallvarGisn%C3%A5s" title="c/HallvarGisnås"><svg class="svg-icon grey"><use xlink:href="/dl-explorer/assets/minima-social-icons.svg#youtube"></use></svg></a></li></ul>
+</div>
+
+  </div>
+
+</footer>
+</body>
+
+</html>

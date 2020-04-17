@@ -918,7 +918,7 @@ tensor([[ 0.0000,  0.0000,  0.0000],
 <div class="cell border-box-sizing text_cell rendered">
 <div class="inner_cell">
 <div class="text_cell_render border-box-sizing rendered_html">
-<p>Here we recognize the input size of 10 and hidden size of 20, but where does the 80 come from? The documentation specifiyes that the weights will be of dimension <code>(4*hidden_size, input_size)</code>. The '4' is called gate_size, and we can find this in the source code for the base RNN module also:</p>
+<p>Here we recognize the input size of 10 and hidden size of 20, but where does the 80 come from? The documentation specifies that the weights will be of dimension <code>(4*hidden_size, input_size)</code>. The '4' is called gate_size, and we can find this in the source code for the base RNN module also:</p>
 <div class="highlight"><pre><span></span><span class="k">if</span> <span class="n">mode</span> <span class="o">==</span> <span class="s1">'LSTM'</span><span class="p">:</span>
     <span class="n">gate_size</span> <span class="o">=</span> <span class="mi">4</span> <span class="o">*</span> <span class="n">hidden_size</span>
 </pre></div>

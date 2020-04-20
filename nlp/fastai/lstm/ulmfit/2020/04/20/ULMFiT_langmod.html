@@ -1,0 +1,2081 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1"><!-- Begin Jekyll SEO tag v2.6.1 -->
+<title>Fine-tuning a Norwegian language model for ULMFiT | Deep learning explorer</title>
+<meta name="generator" content="Jekyll v4.0.0" />
+<meta property="og:title" content="Fine-tuning a Norwegian language model for ULMFiT" />
+<meta property="og:locale" content="en_US" />
+<meta name="description" content="In this post we’ll load a pretrained language model and fine tune it on our target corpus of TV and movie reviews." />
+<meta property="og:description" content="In this post we’ll load a pretrained language model and fine tune it on our target corpus of TV and movie reviews." />
+<link rel="canonical" href="https://hallvagi.github.io/dl-explorer/nlp/fastai/lstm/ulmfit/2020/04/20/ULMFiT_langmod.html" />
+<meta property="og:url" content="https://hallvagi.github.io/dl-explorer/nlp/fastai/lstm/ulmfit/2020/04/20/ULMFiT_langmod.html" />
+<meta property="og:site_name" content="Deep learning explorer" />
+<meta property="og:image" content="https://hallvagi.github.io/dl-explorer/images/some_folder/your_image.png" />
+<meta property="og:type" content="article" />
+<meta property="article:published_time" content="2020-04-20T00:00:00-05:00" />
+<script type="application/ld+json">
+{"description":"In this post we’ll load a pretrained language model and fine tune it on our target corpus of TV and movie reviews.","@type":"BlogPosting","headline":"Fine-tuning a Norwegian language model for ULMFiT","dateModified":"2020-04-20T00:00:00-05:00","datePublished":"2020-04-20T00:00:00-05:00","image":"https://hallvagi.github.io/dl-explorer/images/some_folder/your_image.png","mainEntityOfPage":{"@type":"WebPage","@id":"https://hallvagi.github.io/dl-explorer/nlp/fastai/lstm/ulmfit/2020/04/20/ULMFiT_langmod.html"},"url":"https://hallvagi.github.io/dl-explorer/nlp/fastai/lstm/ulmfit/2020/04/20/ULMFiT_langmod.html","@context":"https://schema.org"}</script>
+<!-- End Jekyll SEO tag -->
+<link rel="stylesheet" href="/dl-explorer/assets/css/style.css"><link type="application/atom+xml" rel="alternate" href="https://hallvagi.github.io/dl-explorer/feed.xml" title="Deep learning explorer" /><link rel="shortcut icon" type="image/x-icon" href="/dl-explorer/images/favicon.ico"><!-- Begin Jekyll SEO tag v2.6.1 -->
+<title>Fine-tuning a Norwegian language model for ULMFiT | Deep learning explorer</title>
+<meta name="generator" content="Jekyll v4.0.0" />
+<meta property="og:title" content="Fine-tuning a Norwegian language model for ULMFiT" />
+<meta property="og:locale" content="en_US" />
+<meta name="description" content="In this post we’ll load a pretrained language model and fine tune it on our target corpus of TV and movie reviews." />
+<meta property="og:description" content="In this post we’ll load a pretrained language model and fine tune it on our target corpus of TV and movie reviews." />
+<link rel="canonical" href="https://hallvagi.github.io/dl-explorer/nlp/fastai/lstm/ulmfit/2020/04/20/ULMFiT_langmod.html" />
+<meta property="og:url" content="https://hallvagi.github.io/dl-explorer/nlp/fastai/lstm/ulmfit/2020/04/20/ULMFiT_langmod.html" />
+<meta property="og:site_name" content="Deep learning explorer" />
+<meta property="og:image" content="https://hallvagi.github.io/dl-explorer/images/some_folder/your_image.png" />
+<meta property="og:type" content="article" />
+<meta property="article:published_time" content="2020-04-20T00:00:00-05:00" />
+<script type="application/ld+json">
+{"description":"In this post we’ll load a pretrained language model and fine tune it on our target corpus of TV and movie reviews.","@type":"BlogPosting","headline":"Fine-tuning a Norwegian language model for ULMFiT","dateModified":"2020-04-20T00:00:00-05:00","datePublished":"2020-04-20T00:00:00-05:00","image":"https://hallvagi.github.io/dl-explorer/images/some_folder/your_image.png","mainEntityOfPage":{"@type":"WebPage","@id":"https://hallvagi.github.io/dl-explorer/nlp/fastai/lstm/ulmfit/2020/04/20/ULMFiT_langmod.html"},"url":"https://hallvagi.github.io/dl-explorer/nlp/fastai/lstm/ulmfit/2020/04/20/ULMFiT_langmod.html","@context":"https://schema.org"}</script>
+<!-- End Jekyll SEO tag -->
+
+<link href="https://unpkg.com/@primer/css/dist/primer.css" rel="stylesheet" />
+<link rel="stylesheet" href="//use.fontawesome.com/releases/v5.0.7/css/all.css"><link type="application/atom+xml" rel="alternate" href="https://hallvagi.github.io/dl-explorer/feed.xml" title="Deep learning explorer" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.11.1/dist/katex.min.css" integrity="sha384-zB1R0rpPzHqg7Kpt0Aljp8JPLqbXI3bhnPWROx27a9N0Ll6ZP/+DiW/UqRcLbRjq" crossorigin="anonymous">
+    <script type="text/javascript" async src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-MML-AM_CHTML"> </script>
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.11.1/dist/katex.min.js" integrity="sha384-y23I5Q6l+B6vatafAwxRu/0oK/79VlbSz7Q9aiSZUvyWYIYsd+qj+o24G5ZU2zJz" crossorigin="anonymous"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.11.1/dist/contrib/auto-render.min.js" integrity="sha384-kWPLUVMOks5AQFrykwIup5lo0m3iMkkHrD0uJ4H5cjeGihAutqP0yW0J6dpFiVkI" crossorigin="anonymous"></script>
+    <script>
+    document.addEventListener("DOMContentLoaded", function() {
+        renderMathInElement( document.body, {
+        delimiters: [
+            {left: "$$", right: "$$", display: true},
+            {left: "[%", right: "%]", display: true},
+            {left: "$", right: "$", display: false}
+        ]}
+        );
+    });
+    </script>
+
+
+<script>
+function wrap_img(fn) {
+    if (document.attachEvent ? document.readyState === "complete" : document.readyState !== "loading") {
+        var elements = document.querySelectorAll(".post img");
+        Array.prototype.forEach.call(elements, function(el, i) {
+            if (el.getAttribute("title")) {
+                const caption = document.createElement('figcaption');
+                var node = document.createTextNode(el.getAttribute("title"));
+                caption.appendChild(node);
+                const wrapper = document.createElement('figure');
+                wrapper.className = 'image';
+                el.parentNode.insertBefore(wrapper, el);
+                el.parentNode.removeChild(el);
+                wrapper.appendChild(el);
+                wrapper.appendChild(caption);
+            }
+        });
+    } else { document.addEventListener('DOMContentLoaded', fn); }
+}
+window.onload = wrap_img;
+</script>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function(){
+    // add link icon to anchor tags
+    var elem = document.querySelectorAll(".anchor-link")
+    elem.forEach(e => (e.innerHTML = '<i class="fas fa-link fa-xs"></i>'));
+    });
+</script>
+</head><body><header class="site-header">
+
+  <div class="wrapper"><a class="site-title" rel="author" href="/dl-explorer/">Deep learning explorer</a><nav class="site-nav">
+        <input type="checkbox" id="nav-trigger" class="nav-trigger" />
+        <label for="nav-trigger">
+          <span class="menu-icon">
+            <svg viewBox="0 0 18 15" width="18px" height="15px">
+              <path d="M18,1.484c0,0.82-0.665,1.484-1.484,1.484H1.484C0.665,2.969,0,2.304,0,1.484l0,0C0,0.665,0.665,0,1.484,0 h15.032C17.335,0,18,0.665,18,1.484L18,1.484z M18,7.516C18,8.335,17.335,9,16.516,9H1.484C0.665,9,0,8.335,0,7.516l0,0 c0-0.82,0.665-1.484,1.484-1.484h15.032C17.335,6.031,18,6.696,18,7.516L18,7.516z M18,13.516C18,14.335,17.335,15,16.516,15H1.484 C0.665,15,0,14.335,0,13.516l0,0c0-0.82,0.665-1.483,1.484-1.483h15.032C17.335,12.031,18,12.695,18,13.516L18,13.516z"/>
+            </svg>
+          </span>
+        </label>
+
+        <div class="trigger"><a class="page-link" href="/dl-explorer/about/">About Me</a><a class="page-link" href="/dl-explorer/search/">Search</a><a class="page-link" href="/dl-explorer/categories/">Tags</a></div>
+      </nav></div>
+</header>
+<main class="page-content" aria-label="Content">
+      <div class="wrapper">
+        <article class="post h-entry" itemscope itemtype="http://schema.org/BlogPosting">
+
+  <header class="post-header">
+    <h1 class="post-title p-name" itemprop="name headline">Fine-tuning a Norwegian language model for ULMFiT</h1><p class="page-description">In this post we&#39;ll load a pretrained language model and fine tune it on our target corpus of TV and movie reviews.</p><p class="post-meta post-meta-title"><time class="dt-published" datetime="2020-04-20T00:00:00-05:00" itemprop="datePublished">
+        Apr 20, 2020
+      </time>
+       • <span class="read-time" title="Estimated read time">
+    
+    
+      17 min read
+    
+</span></p>
+
+    
+      <p class="category-tags"><i class="fas fa-tags category-tags-icon"></i></i> 
+      
+        <a class="category-tags-link" href="/dl-explorer/categories/#NLP">NLP</a>
+        &nbsp;
+      
+        <a class="category-tags-link" href="/dl-explorer/categories/#fastai">fastai</a>
+        &nbsp;
+      
+        <a class="category-tags-link" href="/dl-explorer/categories/#LSTM">LSTM</a>
+        &nbsp;
+      
+        <a class="category-tags-link" href="/dl-explorer/categories/#ULMFiT">ULMFiT</a>
+        
+      
+      </p>
+    
+
+    
+      
+        <div class="pb-5 d-flex flex-wrap flex-justify-end">
+          <div class="px-2">
+
+    <a href="https://github.com/hallvagi/dl-explorer/tree/master/_notebooks/2020-04-20-ULMFiT_langmod.ipynb" role="button" target="_blank">
+<img class="notebook-badge-image" src="/dl-explorer/assets/badges/github.svg" alt="View On GitHub">
+    </a>
+</div>
+
+          <div class="px-2">
+    <a href="https://mybinder.org/v2/gh/hallvagi/dl-explorer/master?filepath=_notebooks%2F2020-04-20-ULMFiT_langmod.ipynb" target="_blank">
+        <img class="notebook-badge-image" src="/dl-explorer/assets/badges/binder.svg" alt="Open In Binder"/>
+    </a>
+</div>
+
+          <div class="px-2">
+    <a href="https://colab.research.google.com/github/hallvagi/dl-explorer/blob/master/_notebooks/2020-04-20-ULMFiT_langmod.ipynb" target="_blank">
+        <img class="notebook-badge-image" src="/dl-explorer/assets/badges/colab.svg" alt="Open In Colab"/>
+    </a>
+</div>
+        </div>
+      </header>
+
+  <div class="post-content e-content" itemprop="articleBody">
+    <ul class="section-nav">
+<li class="toc-entry toc-h1"><a href="#ULMFiT-recap">ULMFiT recap </a></li>
+<li class="toc-entry toc-h1"><a href="#Downloading-weights">Downloading weights </a>
+<ul>
+<li class="toc-entry toc-h2"><a href="#Vocabulary">Vocabulary </a></li>
+<li class="toc-entry toc-h2"><a href="#The-weights">The weights </a></li>
+</ul>
+</li>
+<li class="toc-entry toc-h1"><a href="#Load-the-weights-into-our-model">Load the weights into our model </a>
+<ul>
+<li class="toc-entry toc-h2"><a href="#Replace-special-tokens-in-vocab">Replace special tokens in vocab </a></li>
+<li class="toc-entry toc-h2"><a href="#Language-model:-final-cut">Language model: final cut </a></li>
+</ul>
+</li>
+<li class="toc-entry toc-h1"><a href="#Fine-tune-model">Fine tune model </a></li>
+</ul><!--
+#################################################
+### THIS FILE WAS AUTOGENERATED! DO NOT EDIT! ###
+#################################################
+# file to edit: _notebooks/2020-04-20-ULMFiT_langmod.ipynb
+-->
+
+<div class="container" id="notebook-container">
+        
+    
+    
+<div class="cell border-box-sizing code_cell rendered">
+
+</div>
+    
+
+    
+    
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="kn">from</span> <span class="nn">fastai2.text.all</span> <span class="kn">import</span> <span class="o">*</span>
+</pre></div>
+
+    </div>
+</div>
+</div>
+
+</div>
+    
+
+<div class="cell border-box-sizing text_cell rendered">
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<h1 id="ULMFiT-recap">
+<a class="anchor" href="#ULMFiT-recap" aria-hidden="true"><span class="octicon octicon-link"></span></a>ULMFiT recap<a class="anchor-link" href="#ULMFiT-recap"> </a>
+</h1>
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing text_cell rendered">
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<p>In a previous post we explored the <a href="https://github.com/ltgoslo/norec">Norec</a> Norwegian language corpus of film and TV reviews. In this post I want to use the <a href="https://nlp.fast.ai/classification/2018/05/15/introducing-ulmfit.html">ULMFiT</a> method to predict the sentiment of the reviews based on the text. ULMFiT has three main steps:</p>
+<ol>
+<li>Train a language model on a large general purpose corpus such as Wikipedia</li>
+<li>Fine-tune the language model on the text your are working with - the style is most likely different than a Wikipedia article</li>
+<li>Use the encoder of the fine-tuned language to transform text to feature vectors, and finally add a linear classifier on top to predict the class of the review.</li>
+</ol>
+
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing text_cell rendered">
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<p>In this post we'll focus on step 1 and 2, the language model and the fine-tuning. Training a language model from scratch is a bit of work. First you have to get the data to train it, and the training will also take a long time. Luckily the the fast.ai <a href="https://forums.fast.ai/t/language-model-zoo-gorilla/14623">language model zoo</a> already lists a pretrained language model for Norwegian. Note that this is a ULMFiT model zoo, so we expect to find weights for a <a href="https://arxiv.org/abs/1708.02182">AWD-LSTM</a>. See <a href="https://hallvagi.github.io/dl-explorer/nlp/fastai/rnn/lstm/2020/04/17/AWD_LSTM.html">this post</a> to better understand how to customize an AWD-LSTM with fastai.</p>
+
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing text_cell rendered">
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<p>Let's first grab the dataset from a <a href="https://hallvagi.github.io/dl-explorer/nlp/fastai/2020/04/06/get-data.html">previous post</a>. It's available as a csv from github:</p>
+
+</div>
+</div>
+</div>
+    
+    
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_csv</span><span class="p">(</span><span class="s1">'https://raw.githubusercontent.com/hallvagi/dl-explorer/master/uploads/norec.csv'</span><span class="p">)</span>
+<span class="n">df</span><span class="o">.</span><span class="n">head</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span>
+</pre></div>
+
+    </div>
+</div>
+</div>
+
+<div class="output_wrapper">
+<div class="output">
+
+<div class="output_area">
+
+
+<div class="output_html rendered_html output_subarea output_execute_result">
+<div>
+<style scoped="">
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+
+    .dataframe thead th {
+        text-align: right;
+    }
+</style>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>filename</th>
+      <th>rating</th>
+      <th>title</th>
+      <th>split</th>
+      <th>sentiment</th>
+      <th>text</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>0</th>
+      <td>html/train/000000.html</td>
+      <td>6</td>
+      <td>Rome S02</td>
+      <td>train</td>
+      <td>positive</td>
+      <td>Den andre og siste sesongen av Rome er ute på DVD i Norge. Om du så sesong 1, vet du at du har noe stort i vente. Har du aldri sett Rome før, stikk ut og kjøp begge sesongene. Dette er nemlig en av verdens beste tv-serier, og etter å ha sett de fire første episodene av sesong 2, konstaterer jeg at kvaliteten ser ut til å holde seg på et nesten overraskende høyt nivå! Sesong 2 starter nøyaktig der sesong 1 sluttet. Julius Cæsar ligger myrdet i Senatet og Lucius Vorenus hulker over liket av Neobie. Så blir historien enda mørkere. Marcus Antonius tar over styringen av Roma, men utfordres fra ...</td>
+    </tr>
+    <tr>
+      <th>1</th>
+      <td>html/train/000001.html</td>
+      <td>6</td>
+      <td>Twin Peaks - definitive gold box edition</td>
+      <td>train</td>
+      <td>positive</td>
+      <td>Tv-serien Twin Peaks, skapt av David Lynch og Mark Frost, trollbandt publikum på starten av 1990-tallet. Nå er begge sesongene samlet på DVD i en såkalt ”definitive gold box edition” som viser at serien ikke har mistet noe av appellen. Det eneste som egentlig røper alderen, er at serien ikke er i widescreen, og at flere av skuespillerne fremdeles er unge og vakre. 17 år etter premieren har de falmet, som mennesker gjør, men Twin Peaks sikrer dem evig liv. Serien handler om et mordmysterium i den lille byen Twin Peaks, et sted langs USAs grense til Canada. Unge, vakre Laura Palmer blir funn...</td>
+    </tr>
+    <tr>
+      <th>2</th>
+      <td>html/train/000002.html</td>
+      <td>6</td>
+      <td>The Wire (sesong 1-4)</td>
+      <td>train</td>
+      <td>positive</td>
+      <td>I neste uke kommer sesong 5 av tv-serien ”The Wire” på DVD. 2008 har for meg vært sterkt preget av denne serien. Hjemme hos oss begynte vi med sesong 1 i vår. Da hadde jeg i lengre tid hørt panegyriske lovord om serien fra både venner og media. Vi ble også fanget av skildringene av purk og skurk i Baltimore, og pløyde oss igjennom alt til og med sesong 4 på sensommeren. Jeg vil ikke gå så langt som å kalle det ”verdens beste serie”, som noen har gjort, men det er ingen tvil om at dette er noe av det bedre som er blitt vist på tv! Serien forteller om en gruppe politietterforskere som samles...</td>
+    </tr>
+  </tbody>
+</table>
+</div>
+</div>
+
+</div>
+
+</div>
+</div>
+
+</div>
+    
+
+<div class="cell border-box-sizing text_cell rendered">
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<h1 id="Downloading-weights">
+<a class="anchor" href="#Downloading-weights" aria-hidden="true"><span class="octicon octicon-link"></span></a>Downloading weights<a class="anchor-link" href="#Downloading-weights"> </a>
+</h1>
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing text_cell rendered">
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<p>The pretrained weights we want to use is located in this <a href="https://github.com/mollerhoj/Scandinavian-ULMFiT">repo</a>. There is some information listed here:</p>
+<ul>
+<li>The weights were trained on 90% of all text in the corresponding language wikipedia as per 3. July 2018. The remaining 10% was used for validation.</li>
+<li>Norwegian: Trained on 80,284,231 tokens, and validated on 8,920,387 tokens. We achieve a perplexity of 26.31</li>
+</ul>
+<p>And file descriptions:</p>
+<ul>
+<li>enc.h5 Contains the weights in 'Hierarchical Data Format'</li>
+<li>enc.pth Contains the weights in 'Pytorch model format'</li>
+<li>itos.pkl (Integers to Strings) contains the vocabulary mapping from ids (0 - 30000) to strings</li>
+</ul>
+<p>It looks like we will need the enc.pth (fastai is built on top of PyTorch) and the vocabulary (itos.pkl). But how do we actually load the model? The repo doesn't really specify this part, so let's see if we can figure it out. First we'll download and extract the data to a desired location and have a look at the files:</p>
+
+</div>
+</div>
+</div>
+    
+    
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="n">path</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="s1">'~/.fastai/data/norec'</span><span class="p">)</span> <span class="c1"># choses a path of your liking!</span>
+<span class="n">os</span><span class="o">.</span><span class="n">makedirs</span><span class="p">(</span><span class="n">path</span><span class="o">/</span><span class="s1">'models'</span><span class="p">,</span> <span class="n">exist_ok</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="n">model_url</span> <span class="o">=</span> <span class="s1">'https://www.dropbox.com/s/lwr5kvbxri1gvv9/norwegian.zip'</span>
+<span class="o">!</span>wget <span class="o">{</span>model_url<span class="o">}</span> -O <span class="o">{</span>path/<span class="s1">'models/norwegian.zip'</span><span class="o">}</span> -q
+<span class="o">!</span>unzip -q <span class="o">{</span>path/<span class="s1">'models/norwegian.zip'</span><span class="o">}</span> -d <span class="o">{</span>path/<span class="s1">'models'</span><span class="o">}</span>
+</pre></div>
+
+    </div>
+</div>
+</div>
+
+</div>
+    
+
+    
+    
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="n">Path</span><span class="o">.</span><span class="n">BASE_PATH</span> <span class="o">=</span> <span class="n">path</span> <span class="c1"># paths are printed relative to the BASE_PATH</span>
+<span class="p">(</span><span class="n">path</span><span class="o">/</span><span class="s1">'models'</span><span class="p">)</span><span class="o">.</span><span class="n">ls</span><span class="p">()</span>
+</pre></div>
+
+    </div>
+</div>
+</div>
+
+<div class="output_wrapper">
+<div class="output">
+
+<div class="output_area">
+
+
+
+<div class="output_text output_subarea output_execute_result">
+<pre>(#5) [Path('models/norwegian_wgts.h5'),Path('models/norwegian_enc.pth'),Path('models/norwegian.zip'),Path('models/norwegian_enc.h5'),Path('models/norwegian_itos.pkl')]</pre>
+</div>
+
+</div>
+
+</div>
+</div>
+
+</div>
+    
+
+<div class="cell border-box-sizing text_cell rendered">
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<h2 id="Vocabulary">
+<a class="anchor" href="#Vocabulary" aria-hidden="true"><span class="octicon octicon-link"></span></a>Vocabulary<a class="anchor-link" href="#Vocabulary"> </a>
+</h2>
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing text_cell rendered">
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<p>The first file we want to check out is the norwegian_itos.pkl. This the vocabulary of the model, that is, the words and tokens it's able to recognize. <em>itos</em> means integer-to-string. The index of a particular token in the list is the key to that token.</p>
+
+</div>
+</div>
+</div>
+    
+    
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">path</span><span class="o">/</span><span class="s1">'models/norwegian_itos.pkl'</span><span class="p">,</span> <span class="s1">'rb'</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+    <span class="n">itos</span> <span class="o">=</span> <span class="n">pickle</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">f</span><span class="p">)</span>
+<span class="n">itos</span><span class="p">[:</span><span class="mi">10</span><span class="p">],</span> <span class="n">itos</span><span class="p">[</span><span class="o">-</span><span class="mi">5</span><span class="p">:],</span> <span class="nb">len</span><span class="p">(</span><span class="n">itos</span><span class="p">)</span>
+</pre></div>
+
+    </div>
+</div>
+</div>
+
+<div class="output_wrapper">
+<div class="output">
+
+<div class="output_area">
+
+
+
+<div class="output_text output_subarea output_execute_result">
+<pre>(['_unk_', '_pad_', '.', 'i', ',', 'og', '\n\n', 'av', 'som', 'en'],
+ ['learning', 'initiativtager', 'forskningsleder', 'devils', 'graeme'],
+ 30002)</pre>
+</div>
+
+</div>
+
+</div>
+</div>
+
+</div>
+    
+
+<div class="cell border-box-sizing text_cell rendered">
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<p>The very first token, i.e. index 0, is _unk_ or unknown. The other tokens in the first part of the list are common words such as 'i' (in) and 'og' (and). Among the final tokens there are even some English words. This is not really surprising since Norwegian has "borrowed" several words from English. It seems, however, that the special tokens for unknown and padding (_unk_ and _pad_) are different than the fastai defaults:</p>
+
+</div>
+</div>
+</div>
+    
+    
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="nb">print</span><span class="p">(</span><span class="n">defaults</span><span class="o">.</span><span class="n">text_spec_tok</span><span class="p">)</span>
+</pre></div>
+
+    </div>
+</div>
+</div>
+
+<div class="output_wrapper">
+<div class="output">
+
+<div class="output_area">
+
+<div class="output_subarea output_stream output_stdout output_text">
+<pre>['xxunk', 'xxpad', 'xxbos', 'xxeos', 'xxfld', 'xxrep', 'xxwrep', 'xxup', 'xxmaj']
+</pre>
+</div>
+</div>
+
+</div>
+</div>
+
+</div>
+    
+
+<div class="cell border-box-sizing text_cell rendered">
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<p>Will this cause issues later?</p>
+
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing text_cell rendered">
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<h2 id="The-weights">
+<a class="anchor" href="#The-weights" aria-hidden="true"><span class="octicon octicon-link"></span></a>The weights<a class="anchor-link" href="#The-weights"> </a>
+</h2>
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing text_cell rendered">
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<p>Secondly, let's have a look at the weights. We'll load it with pyTorch.</p>
+
+</div>
+</div>
+</div>
+    
+    
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="n">enc</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">path</span><span class="o">/</span><span class="s1">'models/norwegian_enc.pth'</span><span class="p">)</span>
+<span class="n">enc</span><span class="o">.</span><span class="n">keys</span><span class="p">()</span>
+</pre></div>
+
+    </div>
+</div>
+</div>
+
+<div class="output_wrapper">
+<div class="output">
+
+<div class="output_area">
+
+
+
+<div class="output_text output_subarea output_execute_result">
+<pre>odict_keys(['encoder.weight', 'encoder_dp.emb.weight', 'rnns.0.weight_hh_l0_raw', 'rnns.0.module.weight_ih_l0', 'rnns.0.module.weight_hh_l0', 'rnns.0.module.bias_ih_l0', 'rnns.0.module.bias_hh_l0', 'rnns.1.weight_hh_l0_raw', 'rnns.1.module.weight_ih_l0', 'rnns.1.module.weight_hh_l0', 'rnns.1.module.bias_ih_l0', 'rnns.1.module.bias_hh_l0', 'rnns.2.weight_hh_l0_raw', 'rnns.2.module.weight_ih_l0', 'rnns.2.module.weight_hh_l0', 'rnns.2.module.bias_ih_l0', 'rnns.2.module.bias_hh_l0'])</pre>
+</div>
+
+</div>
+
+</div>
+</div>
+
+</div>
+    
+
+<div class="cell border-box-sizing text_cell rendered">
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<p>It's a dictionary with keys, and the keys are the names of the layers of the model. We can see that is has an embedding layer (named 'encoder'), and three RNNs(LSTMs more precisely) with various descriptions. We recognize the three layer LSTM from the <a href="https://arxiv.org/abs/1708.02182">AWD-LSTM</a> and the <a href="https://arxiv.org/abs/1801.06146">ULMFiT</a> paper. So we must make sure that the model we set up matches matches this. Let's have a look at the dimensions of the weights.</p>
+
+</div>
+</div>
+</div>
+    
+    
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="k">for</span> <span class="n">k</span><span class="p">,</span><span class="n">v</span> <span class="ow">in</span> <span class="n">enc</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">k</span><span class="p">,</span><span class="s2">" </span><span class="se">\t</span><span class="s2">"</span><span class="p">,</span> <span class="n">v</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
+</pre></div>
+
+    </div>
+</div>
+</div>
+
+<div class="output_wrapper">
+<div class="output">
+
+<div class="output_area">
+
+<div class="output_subarea output_stream output_stdout output_text">
+<pre>encoder.weight  	 torch.Size([30002, 400])
+encoder_dp.emb.weight  	 torch.Size([30002, 400])
+rnns.0.weight_hh_l0_raw  	 torch.Size([4600, 1150])
+rnns.0.module.weight_ih_l0  	 torch.Size([4600, 400])
+rnns.0.module.weight_hh_l0  	 torch.Size([4600, 1150])
+rnns.0.module.bias_ih_l0  	 torch.Size([4600])
+rnns.0.module.bias_hh_l0  	 torch.Size([4600])
+rnns.1.weight_hh_l0_raw  	 torch.Size([4600, 1150])
+rnns.1.module.weight_ih_l0  	 torch.Size([4600, 1150])
+rnns.1.module.weight_hh_l0  	 torch.Size([4600, 1150])
+rnns.1.module.bias_ih_l0  	 torch.Size([4600])
+rnns.1.module.bias_hh_l0  	 torch.Size([4600])
+rnns.2.weight_hh_l0_raw  	 torch.Size([1600, 400])
+rnns.2.module.weight_ih_l0  	 torch.Size([1600, 1150])
+rnns.2.module.weight_hh_l0  	 torch.Size([1600, 400])
+rnns.2.module.bias_ih_l0  	 torch.Size([1600])
+rnns.2.module.bias_hh_l0  	 torch.Size([1600])
+</pre>
+</div>
+</div>
+
+</div>
+</div>
+
+</div>
+    
+
+<div class="cell border-box-sizing text_cell rendered">
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<p>We notice that the hidden size is different than the fastai default of 1152, but apart from that everything looks fine. Let's save a few weights from the embedding layer to compare with our final model.</p>
+
+</div>
+</div>
+</div>
+    
+    
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="n">sample_weights</span> <span class="o">=</span> <span class="n">enc</span><span class="p">[</span><span class="s1">'encoder.weight'</span><span class="p">][</span><span class="mi">0</span><span class="p">][:</span><span class="mi">5</span><span class="p">]</span>
+<span class="n">sample_weights</span>
+</pre></div>
+
+    </div>
+</div>
+</div>
+
+<div class="output_wrapper">
+<div class="output">
+
+<div class="output_area">
+
+
+
+<div class="output_text output_subarea output_execute_result">
+<pre>tensor([0.5711, 0.2321, 0.2601, 0.9425, 0.0901])</pre>
+</div>
+
+</div>
+
+</div>
+</div>
+
+</div>
+    
+
+<div class="cell border-box-sizing text_cell rendered">
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<h1 id="Load-the-weights-into-our-model">
+<a class="anchor" href="#Load-the-weights-into-our-model" aria-hidden="true"><span class="octicon octicon-link"></span></a>Load the weights into our model<a class="anchor-link" href="#Load-the-weights-into-our-model"> </a>
+</h1>
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing text_cell rendered">
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<p>First we have to make sure that our data loader uses our custom vocabulary instead of doing tokenization on its own, so we pass <code>text_vocab = itos</code>. We also set <code>is_lm = True</code> since we want a language model and not a classifier. We use the basic factory method, since we have no need of customization at this point.</p>
+
+</div>
+</div>
+</div>
+    
+    
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="n">dls_lm</span> <span class="o">=</span> <span class="n">TextDataLoaders</span><span class="o">.</span><span class="n">from_df</span><span class="p">(</span><span class="n">df</span><span class="p">,</span> <span class="n">text_col</span><span class="o">=</span><span class="s1">'text'</span><span class="p">,</span> <span class="n">text_vocab</span><span class="o">=</span><span class="n">itos</span><span class="p">,</span> <span class="n">is_lm</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">valid_pct</span><span class="o">=</span><span class="mf">0.1</span><span class="p">)</span>
+<span class="n">dls_lm</span><span class="o">.</span><span class="n">show_batch</span><span class="p">(</span><span class="n">max_n</span><span class="o">=</span><span class="mi">3</span><span class="p">)</span>
+</pre></div>
+
+    </div>
+</div>
+</div>
+
+<div class="output_wrapper">
+<div class="output">
+
+<div class="output_area">
+
+
+<div class="output_html rendered_html output_subarea ">
+
+</div>
+
+</div>
+
+<div class="output_area">
+
+
+<div class="output_html rendered_html output_subarea ">
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>text</th>
+      <th>text_</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>0</th>
+      <td>_unk_ _unk_ film : i likhet med _unk_ alejandro _unk_ gonzález _unk_ _unk_ « _unk_ » er _unk_ olivier _unk_ _unk_ ' « _unk_ _unk_ maria » et forsøk på å _unk_ spørsmålet om hva som skjer med _unk_ i en tid der de ambisiøse _unk_ _unk_ til tv - skjermen og amerikanske _unk_ dominerer både _unk_ og _unk_ . _unk_ men der « _unk_ » er en high _unk_ - film</td>
+      <td>_unk_ film : i likhet med _unk_ alejandro _unk_ gonzález _unk_ _unk_ « _unk_ » er _unk_ olivier _unk_ _unk_ ' « _unk_ _unk_ maria » et forsøk på å _unk_ spørsmålet om hva som skjer med _unk_ i en tid der de ambisiøse _unk_ _unk_ til tv - skjermen og amerikanske _unk_ dominerer både _unk_ og _unk_ . _unk_ men der « _unk_ » er en high _unk_ - film med</td>
+    </tr>
+    <tr>
+      <th>1</th>
+      <td>på først : _unk_ fordi den franske byen _unk_ calais ligger ved kysten på det stedet hvor _unk_ den engelske kanal er på sitt smaleste , har den blitt invadert av illegale innvandrere fra land som _unk_ afghanistan og _unk_ irak , som etter en _unk_ ferd fra hjemlandet vil forsøke å krysse kanalen og nå _unk_ storbritannia . _unk_ ofte skjuler de seg i lastebiler , noen forsøker å svømme over</td>
+      <td>først : _unk_ fordi den franske byen _unk_ calais ligger ved kysten på det stedet hvor _unk_ den engelske kanal er på sitt smaleste , har den blitt invadert av illegale innvandrere fra land som _unk_ afghanistan og _unk_ irak , som etter en _unk_ ferd fra hjemlandet vil forsøke å krysse kanalen og nå _unk_ storbritannia . _unk_ ofte skjuler de seg i lastebiler , noen forsøker å svømme over .</td>
+    </tr>
+    <tr>
+      <th>2</th>
+      <td>et stort og _unk_ glimt i øyet . _unk_ de spiller aldri hovedrollen selv . _unk_ det er noen år siden herrene _unk_ nils _unk_ _unk_ og _unk_ ronny _unk_ kristoffersen gjorde « _unk_ » . _unk_ nå er de tilbake igjen . _unk_ godt er det . i ni programmer følger vi _unk_ nils og _unk_ ronny gjennom _unk_ colombia , _unk_ gaza , _unk_ england og usas _unk_ _unk_ _unk_</td>
+      <td>stort og _unk_ glimt i øyet . _unk_ de spiller aldri hovedrollen selv . _unk_ det er noen år siden herrene _unk_ nils _unk_ _unk_ og _unk_ ronny _unk_ kristoffersen gjorde « _unk_ » . _unk_ nå er de tilbake igjen . _unk_ godt er det . i ni programmer følger vi _unk_ nils og _unk_ ronny gjennom _unk_ colombia , _unk_ gaza , _unk_ england og usas _unk_ _unk_ _unk_ _unk_</td>
+    </tr>
+  </tbody>
+</table>
+</div>
+
+</div>
+
+</div>
+</div>
+
+</div>
+    
+
+<div class="cell border-box-sizing text_cell rendered">
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<p>This looks pretty good. We can recognize our _unk<em> token for example. We also see that the label column, that is the \"text</em>" column, is offset by 1 token from the input. This makes sense since the goal of a language model is to predict the next word in a sequence.</p>
+
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing text_cell rendered">
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<p>The next step is to configure the AWD-LSTM architecture. Let's have a look at the default config:</p>
+
+</div>
+</div>
+</div>
+    
+    
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="n">awd_lstm_lm_config</span>
+</pre></div>
+
+    </div>
+</div>
+</div>
+
+<div class="output_wrapper">
+<div class="output">
+
+<div class="output_area">
+
+
+
+<div class="output_text output_subarea output_execute_result">
+<pre>{'emb_sz': 400,
+ 'n_hid': 1152,
+ 'n_layers': 3,
+ 'pad_token': 1,
+ 'bidir': False,
+ 'output_p': 0.1,
+ 'hidden_p': 0.15,
+ 'input_p': 0.25,
+ 'embed_p': 0.02,
+ 'weight_p': 0.2,
+ 'tie_weights': True,
+ 'out_bias': True}</pre>
+</div>
+
+</div>
+
+</div>
+</div>
+
+</div>
+    
+
+<div class="cell border-box-sizing text_cell rendered">
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<p>Most of these look good, but we will change the n_hid to 1150. Note also the pad_token=1. This is the index of the padding token, and from our itos above we see that <code>itos[1] = _pad_</code></p>
+
+</div>
+</div>
+</div>
+    
+    
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="n">awd_lstm_lm_config</span><span class="p">[</span><span class="s1">'n_hid'</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1150</span>
+</pre></div>
+
+    </div>
+</div>
+</div>
+
+</div>
+    
+
+<div class="cell border-box-sizing text_cell rendered">
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<p>Now we can pass the config to our learner object. Notice that we set <code>pretrained=False</code>, we want to load our own weights. The final <code>.to_fp16()</code> means that the model is trained with mixed precision (16 bit floating point) which can often speed up training quite a bit.</p>
+
+</div>
+</div>
+</div>
+    
+    
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="n">learn_lm</span> <span class="o">=</span> <span class="n">language_model_learner</span><span class="p">(</span><span class="n">dls_lm</span><span class="p">,</span> 
+                               <span class="n">arch</span><span class="o">=</span><span class="n">AWD_LSTM</span><span class="p">,</span> 
+                               <span class="n">metrics</span><span class="o">=</span><span class="p">[</span><span class="n">accuracy</span><span class="p">,</span> <span class="n">Perplexity</span><span class="p">()],</span> 
+                               <span class="n">path</span><span class="o">=</span><span class="n">path</span><span class="p">,</span> 
+                               <span class="n">config</span><span class="o">=</span><span class="n">awd_lstm_lm_config</span><span class="p">,</span> 
+                               <span class="n">pretrained</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span><span class="o">.</span><span class="n">to_fp16</span><span class="p">()</span>
+</pre></div>
+
+    </div>
+</div>
+</div>
+
+</div>
+    
+
+<div class="cell border-box-sizing text_cell rendered">
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<p>The model summary now looks correct:</p>
+
+</div>
+</div>
+</div>
+    
+    
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="n">learn_lm</span><span class="o">.</span><span class="n">model</span>
+</pre></div>
+
+    </div>
+</div>
+</div>
+
+<div class="output_wrapper">
+<div class="output">
+
+<div class="output_area">
+
+
+
+<div class="output_text output_subarea output_execute_result">
+<pre>SequentialRNN(
+  (0): AWD_LSTM(
+    (encoder): Embedding(30002, 400, padding_idx=1)
+    (encoder_dp): EmbeddingDropout(
+      (emb): Embedding(30002, 400, padding_idx=1)
+    )
+    (rnns): ModuleList(
+      (0): WeightDropout(
+        (module): LSTM(400, 1150, batch_first=True)
+      )
+      (1): WeightDropout(
+        (module): LSTM(1150, 1150, batch_first=True)
+      )
+      (2): WeightDropout(
+        (module): LSTM(1150, 400, batch_first=True)
+      )
+    )
+    (input_dp): RNNDropout()
+    (hidden_dps): ModuleList(
+      (0): RNNDropout()
+      (1): RNNDropout()
+      (2): RNNDropout()
+    )
+  )
+  (1): LinearDecoder(
+    (decoder): Linear(in_features=400, out_features=30002, bias=True)
+    (output_dp): RNNDropout()
+  )
+)</pre>
+</div>
+
+</div>
+
+</div>
+</div>
+
+</div>
+    
+
+<div class="cell border-box-sizing text_cell rendered">
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<p>The weights of our model have been initialized randomly, so they should not match at the moment. Let's compare our sample weights from the above section with those from our language model:</p>
+
+</div>
+</div>
+</div>
+    
+    
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="n">learn_lm</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">state_dict</span><span class="p">()[</span><span class="s1">'0.encoder.weight'</span><span class="p">][</span><span class="mi">0</span><span class="p">][:</span><span class="mi">5</span><span class="p">]</span><span class="o">.</span><span class="n">cpu</span><span class="p">(),</span> <span class="n">sample_weights</span>
+</pre></div>
+
+    </div>
+</div>
+</div>
+
+<div class="output_wrapper">
+<div class="output">
+
+<div class="output_area">
+
+
+
+<div class="output_text output_subarea output_execute_result">
+<pre>(tensor([-0.0005, -0.0117,  0.0255,  0.0342,  0.0455]),
+ tensor([0.5711, 0.2321, 0.2601, 0.9425, 0.0901]))</pre>
+</div>
+
+</div>
+
+</div>
+</div>
+
+</div>
+    
+
+<div class="cell border-box-sizing text_cell rendered">
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<p>But now we should be able to load the encoder:</p>
+
+</div>
+</div>
+</div>
+    
+    
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="n">learn_lm</span><span class="o">.</span><span class="n">load_encoder</span><span class="p">(</span><span class="n">path</span><span class="o">/</span><span class="s1">'models/norwegian_enc'</span><span class="p">)</span>
+</pre></div>
+
+    </div>
+</div>
+</div>
+
+<div class="output_wrapper">
+<div class="output">
+
+<div class="output_area">
+
+
+
+<div class="output_text output_subarea output_execute_result">
+<pre>&lt;fastai2.text.learner.LMLearner at 0x7f518b3bfc10&gt;</pre>
+</div>
+
+</div>
+
+</div>
+</div>
+
+</div>
+    
+
+<div class="cell border-box-sizing text_cell rendered">
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<p>It worked! We can also see that the weights match:</p>
+
+</div>
+</div>
+</div>
+    
+    
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="n">learn_lm</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">state_dict</span><span class="p">()[</span><span class="s1">'0.encoder.weight'</span><span class="p">][</span><span class="mi">0</span><span class="p">][:</span><span class="mi">5</span><span class="p">]</span><span class="o">.</span><span class="n">cpu</span><span class="p">(),</span> <span class="n">sample_weights</span>
+</pre></div>
+
+    </div>
+</div>
+</div>
+
+<div class="output_wrapper">
+<div class="output">
+
+<div class="output_area">
+
+
+
+<div class="output_text output_subarea output_execute_result">
+<pre>(tensor([0.5711, 0.2321, 0.2601, 0.9425, 0.0901]),
+ tensor([0.5711, 0.2321, 0.2601, 0.9425, 0.0901]))</pre>
+</div>
+
+</div>
+
+</div>
+</div>
+
+</div>
+    
+
+<div class="cell border-box-sizing text_cell rendered">
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<p>But are we able to predict any useful text?</p>
+
+</div>
+</div>
+</div>
+    
+    
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="n">learn_lm</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="s1">'Hovedstaden i Norge er'</span><span class="p">)</span> <span class="c1"># the captical of norway is</span>
+</pre></div>
+
+    </div>
+</div>
+</div>
+
+<div class="output_wrapper">
+<div class="output">
+
+<div class="output_area">
+
+<div class="output_subarea output_text output_error">
+<pre>
+<span class="ansi-red-fg">---------------------------------------------------------------------------</span>
+<span class="ansi-red-fg">ValueError</span>                                Traceback (most recent call last)
+<span class="ansi-green-fg">&lt;ipython-input-36-d3bf635eccab&gt;</span> in <span class="ansi-cyan-fg">&lt;module&gt;</span>
+<span class="ansi-green-fg">----&gt; 1</span><span class="ansi-red-fg"> </span>learn_lm<span class="ansi-blue-fg">.</span>predict<span class="ansi-blue-fg">(</span><span class="ansi-blue-fg">'Hovedstaden i Norge er'</span><span class="ansi-blue-fg">)</span>
+
+<span class="ansi-green-fg">~/git/fastai2/fastai2/text/learner.py</span> in <span class="ansi-cyan-fg">predict</span><span class="ansi-blue-fg">(self, text, n_words, no_unk, temperature, min_p, no_bar, decoder, only_last_word)</span>
+<span class="ansi-green-intense-fg ansi-bold">    159</span>         self<span class="ansi-blue-fg">.</span>model<span class="ansi-blue-fg">.</span>reset<span class="ansi-blue-fg">(</span><span class="ansi-blue-fg">)</span>
+<span class="ansi-green-intense-fg ansi-bold">    160</span>         idxs <span class="ansi-blue-fg">=</span> idxs_all <span class="ansi-blue-fg">=</span> self<span class="ansi-blue-fg">.</span>dls<span class="ansi-blue-fg">.</span>test_dl<span class="ansi-blue-fg">(</span><span class="ansi-blue-fg">[</span>text<span class="ansi-blue-fg">]</span><span class="ansi-blue-fg">)</span><span class="ansi-blue-fg">.</span>items<span class="ansi-blue-fg">[</span><span class="ansi-cyan-fg">0</span><span class="ansi-blue-fg">]</span><span class="ansi-blue-fg">.</span>to<span class="ansi-blue-fg">(</span>self<span class="ansi-blue-fg">.</span>dls<span class="ansi-blue-fg">.</span>device<span class="ansi-blue-fg">)</span>
+<span class="ansi-green-fg">--&gt; 161</span><span class="ansi-red-fg">         </span><span class="ansi-green-fg">if</span> no_unk<span class="ansi-blue-fg">:</span> unk_idx <span class="ansi-blue-fg">=</span> self<span class="ansi-blue-fg">.</span>dls<span class="ansi-blue-fg">.</span>vocab<span class="ansi-blue-fg">.</span>index<span class="ansi-blue-fg">(</span>UNK<span class="ansi-blue-fg">)</span>
+<span class="ansi-green-intense-fg ansi-bold">    162</span>         <span class="ansi-green-fg">for</span> _ <span class="ansi-green-fg">in</span> <span class="ansi-blue-fg">(</span>range<span class="ansi-blue-fg">(</span>n_words<span class="ansi-blue-fg">)</span> <span class="ansi-green-fg">if</span> no_bar <span class="ansi-green-fg">else</span> progress_bar<span class="ansi-blue-fg">(</span>range<span class="ansi-blue-fg">(</span>n_words<span class="ansi-blue-fg">)</span><span class="ansi-blue-fg">,</span> leave<span class="ansi-blue-fg">=</span><span class="ansi-green-fg">False</span><span class="ansi-blue-fg">)</span><span class="ansi-blue-fg">)</span><span class="ansi-blue-fg">:</span>
+<span class="ansi-green-intense-fg ansi-bold">    163</span>             <span class="ansi-green-fg">with</span> self<span class="ansi-blue-fg">.</span>no_bar<span class="ansi-blue-fg">(</span><span class="ansi-blue-fg">)</span><span class="ansi-blue-fg">:</span> preds<span class="ansi-blue-fg">,</span>_ <span class="ansi-blue-fg">=</span> self<span class="ansi-blue-fg">.</span>get_preds<span class="ansi-blue-fg">(</span>dl<span class="ansi-blue-fg">=</span><span class="ansi-blue-fg">[</span><span class="ansi-blue-fg">(</span>idxs<span class="ansi-blue-fg">[</span><span class="ansi-green-fg">None</span><span class="ansi-blue-fg">]</span><span class="ansi-blue-fg">,</span><span class="ansi-blue-fg">)</span><span class="ansi-blue-fg">]</span><span class="ansi-blue-fg">)</span>
+
+<span class="ansi-red-fg">ValueError</span>: 'xxunk' is not in list</pre>
+</div>
+</div>
+
+</div>
+</div>
+
+</div>
+    
+
+<div class="cell border-box-sizing text_cell rendered">
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<p>What is the problem now? We see that <code>predict()</code> by default has <code>no_unk=True</code>. The error message tells us that the library tries to get the index of the UNK token. The UNK token is as we noted earlier different in our <code>itos</code> (vocabulary) than that what the library expects</p>
+
+</div>
+</div>
+</div>
+    
+    
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="n">UNK</span><span class="p">,</span> <span class="n">itos</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+</pre></div>
+
+    </div>
+</div>
+</div>
+
+<div class="output_wrapper">
+<div class="output">
+
+<div class="output_area">
+
+
+
+<div class="output_text output_subarea output_execute_result">
+<pre>('xxunk', '_unk_')</pre>
+</div>
+
+</div>
+
+</div>
+</div>
+
+</div>
+    
+
+<div class="cell border-box-sizing text_cell rendered">
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<p>This is not really a problem for our model. The models only sees the underlying numbers and indexes, and they are still correct. But if we want to use most of the convenience functions of the fastai2 library, we either have to customise the code, or simpler still, change the vocab.</p>
+
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing text_cell rendered">
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<h2 id="Replace-special-tokens-in-vocab">
+<a class="anchor" href="#Replace-special-tokens-in-vocab" aria-hidden="true"><span class="octicon octicon-link"></span></a>Replace special tokens in vocab<a class="anchor-link" href="#Replace-special-tokens-in-vocab"> </a>
+</h2>
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing text_cell rendered">
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<p>So let's look through our itos and see if we can find any special tokens:</p>
+
+</div>
+</div>
+</div>
+    
+    
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="nb">print</span><span class="p">(</span><span class="n">defaults</span><span class="o">.</span><span class="n">text_spec_tok</span><span class="p">)</span> <span class="c1"># fastai defaults</span>
+</pre></div>
+
+    </div>
+</div>
+</div>
+
+<div class="output_wrapper">
+<div class="output">
+
+<div class="output_area">
+
+<div class="output_subarea output_stream output_stdout output_text">
+<pre>['xxunk', 'xxpad', 'xxbos', 'xxeos', 'xxfld', 'xxrep', 'xxwrep', 'xxup', 'xxmaj']
+</pre>
+</div>
+</div>
+
+</div>
+</div>
+
+</div>
+    
+
+<div class="cell border-box-sizing text_cell rendered">
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<p>Let's look for tokens that contains an underscore <strong>_</strong></p>
+
+</div>
+</div>
+</div>
+    
+    
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="n">_toks</span> <span class="o">=</span> <span class="p">[</span><span class="n">token</span> <span class="k">for</span> <span class="n">token</span> <span class="ow">in</span> <span class="n">itos</span> <span class="k">if</span> <span class="s1">'_'</span> <span class="ow">in</span> <span class="n">token</span><span class="p">]</span>
+<span class="n">_toks</span><span class="p">[:</span><span class="mi">5</span><span class="p">]</span>
+</pre></div>
+
+    </div>
+</div>
+</div>
+
+<div class="output_wrapper">
+<div class="output">
+
+<div class="output_area">
+
+
+
+<div class="output_text output_subarea output_execute_result">
+<pre>['_unk_', '_pad_', 't_up', 'tk_rep', 'formula_1']</pre>
+</div>
+
+</div>
+
+</div>
+</div>
+
+</div>
+    
+
+<div class="cell border-box-sizing text_cell rendered">
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<p>And then for tokens that begin with an <strong>x</strong>. We use a simple regex to check for x in the beginning of the token.</p>
+
+</div>
+</div>
+</div>
+    
+    
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="n">x_toks</span> <span class="o">=</span> <span class="p">[</span><span class="n">token</span> <span class="k">for</span> <span class="n">token</span> <span class="ow">in</span> <span class="n">itos</span> <span class="k">if</span> <span class="n">re</span><span class="o">.</span><span class="n">match</span><span class="p">(</span><span class="sa">r</span><span class="s1">'^x'</span><span class="p">,</span> <span class="n">token</span><span class="p">)</span> <span class="o">!=</span> <span class="kc">None</span><span class="p">]</span>
+<span class="n">x_toks</span><span class="p">[:</span><span class="mi">5</span><span class="p">]</span>
+</pre></div>
+
+    </div>
+</div>
+</div>
+
+<div class="output_wrapper">
+<div class="output">
+
+<div class="output_area">
+
+
+
+<div class="output_text output_subarea output_execute_result">
+<pre>['xfld', 'xbos', 'x', 'xii', 'xi']</pre>
+</div>
+
+</div>
+
+</div>
+</div>
+
+</div>
+    
+
+<div class="cell border-box-sizing text_cell rendered">
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<p>'<em>unk</em>', '<em>pad</em>', 'xfld', 'xbos' seems pretty obvious. But I'm less sure of eg. 't_up' and 'tk_rep'. So we replace a bit conservatively:</p>
+
+</div>
+</div>
+</div>
+    
+    
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="n">to_replace</span> <span class="o">=</span> <span class="n">_toks</span><span class="p">[:</span><span class="mi">2</span><span class="p">]</span><span class="o">+</span><span class="n">x_toks</span><span class="p">[:</span><span class="mi">2</span><span class="p">]</span>
+<span class="n">to_replace</span>
+</pre></div>
+
+    </div>
+</div>
+</div>
+
+<div class="output_wrapper">
+<div class="output">
+
+<div class="output_area">
+
+
+
+<div class="output_text output_subarea output_execute_result">
+<pre>['_unk_', '_pad_', 'xfld', 'xbos']</pre>
+</div>
+
+</div>
+
+</div>
+</div>
+
+</div>
+    
+
+    
+    
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="n">replace_with</span> <span class="o">=</span> <span class="n">defaults</span><span class="o">.</span><span class="n">text_spec_tok</span><span class="p">[:</span><span class="mi">2</span><span class="p">]</span><span class="o">+</span><span class="n">defaults</span><span class="o">.</span><span class="n">text_spec_tok</span><span class="p">[</span><span class="mi">7</span><span class="p">:</span><span class="mi">8</span><span class="p">]</span><span class="o">+</span><span class="n">defaults</span><span class="o">.</span><span class="n">text_spec_tok</span><span class="p">[</span><span class="mi">2</span><span class="p">:</span><span class="mi">3</span><span class="p">]</span>
+<span class="n">replace_with</span>
+</pre></div>
+
+    </div>
+</div>
+</div>
+
+<div class="output_wrapper">
+<div class="output">
+
+<div class="output_area">
+
+
+
+<div class="output_text output_subarea output_execute_result">
+<pre>['xxunk', 'xxpad', 'xxup', 'xxbos']</pre>
+</div>
+
+</div>
+
+</div>
+</div>
+
+</div>
+    
+
+<div class="cell border-box-sizing text_cell rendered">
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<p>Then we loop trough our itos and replace the selected tokens:</p>
+
+</div>
+</div>
+</div>
+    
+    
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="k">for</span> <span class="n">tok_remove</span><span class="p">,</span> <span class="n">tok_insert</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">to_replace</span><span class="p">,</span> <span class="n">replace_with</span><span class="p">):</span>
+    <span class="n">idx</span> <span class="o">=</span> <span class="n">itos</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="n">tok_remove</span><span class="p">)</span>
+    <span class="n">itos</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span> <span class="o">=</span> <span class="n">tok_insert</span>
+</pre></div>
+
+    </div>
+</div>
+</div>
+
+</div>
+    
+
+<div class="cell border-box-sizing text_cell rendered">
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<p>To verify that we did things correct:</p>
+
+</div>
+</div>
+</div>
+    
+    
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="n">idxs</span> <span class="o">=</span> <span class="p">[</span><span class="n">itos</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="n">token</span><span class="p">)</span> <span class="k">for</span> <span class="n">token</span> <span class="ow">in</span> <span class="n">replace_with</span><span class="p">]</span>
+<span class="n">idxs</span>
+</pre></div>
+
+    </div>
+</div>
+</div>
+
+<div class="output_wrapper">
+<div class="output">
+
+<div class="output_area">
+
+
+
+<div class="output_text output_subarea output_execute_result">
+<pre>[0, 1, 31, 32]</pre>
+</div>
+
+</div>
+
+</div>
+</div>
+
+</div>
+    
+
+    
+    
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="p">[</span><span class="n">itos</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span> <span class="k">for</span> <span class="n">idx</span> <span class="ow">in</span> <span class="n">idxs</span><span class="p">]</span>
+</pre></div>
+
+    </div>
+</div>
+</div>
+
+<div class="output_wrapper">
+<div class="output">
+
+<div class="output_area">
+
+
+
+<div class="output_text output_subarea output_execute_result">
+<pre>['xxunk', 'xxpad', 'xxup', 'xxbos']</pre>
+</div>
+
+</div>
+
+</div>
+</div>
+
+</div>
+    
+
+<div class="cell border-box-sizing text_cell rendered">
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<h2 id="Language-model:-final-cut">
+<a class="anchor" href="#Language-model:-final-cut" aria-hidden="true"><span class="octicon octicon-link"></span></a>Language model: final cut<a class="anchor-link" href="#Language-model:-final-cut"> </a>
+</h2>
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing text_cell rendered">
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<p>Let's make yet another version of our dataloader and language learner.</p>
+
+</div>
+</div>
+</div>
+    
+    
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="n">dls_lm</span> <span class="o">=</span> <span class="n">TextDataLoaders</span><span class="o">.</span><span class="n">from_df</span><span class="p">(</span><span class="n">df</span><span class="p">,</span> <span class="n">text_col</span><span class="o">=</span><span class="s1">'text'</span><span class="p">,</span> <span class="n">text_vocab</span><span class="o">=</span><span class="n">itos</span><span class="p">,</span> <span class="n">is_lm</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">valid_pct</span><span class="o">=</span><span class="mf">0.1</span><span class="p">)</span>
+<span class="n">learn_lm</span> <span class="o">=</span> <span class="n">language_model_learner</span><span class="p">(</span><span class="n">dls_lm</span><span class="p">,</span> <span class="n">arch</span><span class="o">=</span><span class="n">AWD_LSTM</span><span class="p">,</span> <span class="n">metrics</span><span class="o">=</span><span class="p">[</span><span class="n">accuracy</span><span class="p">,</span> <span class="n">Perplexity</span><span class="p">()],</span> 
+                               <span class="n">path</span><span class="o">=</span><span class="n">path</span><span class="p">,</span> <span class="n">config</span><span class="o">=</span><span class="n">awd_lstm_lm_config</span><span class="p">,</span> <span class="n">pretrained</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span><span class="o">.</span><span class="n">to_fp16</span><span class="p">()</span>
+<span class="n">learn_lm</span><span class="o">.</span><span class="n">load_encoder</span><span class="p">(</span><span class="n">path</span><span class="o">/</span><span class="s1">'models/norwegian_enc'</span><span class="p">)</span>
+</pre></div>
+
+    </div>
+</div>
+</div>
+
+<div class="output_wrapper">
+<div class="output">
+
+<div class="output_area">
+
+
+<div class="output_html rendered_html output_subarea ">
+
+</div>
+
+</div>
+
+<div class="output_area">
+
+
+
+<div class="output_text output_subarea output_execute_result">
+<pre>&lt;fastai2.text.learner.LMLearner at 0x7f511dc73b50&gt;</pre>
+</div>
+
+</div>
+
+</div>
+</div>
+
+</div>
+    
+
+    
+    
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="n">TEXT</span> <span class="o">=</span> <span class="s2">"Hovedstaden i Norge er"</span> <span class="c1"># the capital of norway is</span>
+<span class="n">preds</span> <span class="o">=</span> <span class="p">[</span><span class="n">learn_lm</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">TEXT</span><span class="p">,</span> <span class="mi">40</span><span class="p">,</span> <span class="n">temperature</span><span class="o">=</span><span class="mf">0.75</span><span class="p">)</span> <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">3</span><span class="p">)]</span>
+<span class="n">preds</span>
+</pre></div>
+
+    </div>
+</div>
+</div>
+
+<div class="output_wrapper">
+<div class="output">
+
+<div class="output_area">
+
+
+<div class="output_html rendered_html output_subarea ">
+
+</div>
+
+</div>
+
+<div class="output_area">
+
+
+<div class="output_html rendered_html output_subarea ">
+
+</div>
+
+</div>
+
+<div class="output_area">
+
+
+<div class="output_html rendered_html output_subarea ">
+
+</div>
+
+</div>
+
+<div class="output_area">
+
+
+
+<div class="output_text output_subarea output_execute_result">
+<pre>['hovedstaden i norge er en by med stor politisk status fra 1891 til 1955 . \n \n 1 havene \n\n havene ( engelsk " american mountains " , engelsk : " mountain peninsula " eller " t_up ngc " eller " øvre',
+ 'hovedstaden i norge er \n \n 1 hans - herman \n\n hans - günther ( født 28 . desember 1812 i rostock , død 6 . desember 1888 i leipzig ) var en tysk økonom , som var general og generaldirektør for',
+ 'hovedstaden i norge er oppkalt etter ham . i tillegg er det ett av norges høyeste byer og omegn . i norge er det også en rekke andre land : \n\n historie . \n det er i dag i norge ikke lenger en kommunal']</pre>
+</div>
+
+</div>
+
+</div>
+</div>
+
+</div>
+    
+
+<div class="cell border-box-sizing text_cell rendered">
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<p>Well, that kind of makes sense. LSTMs are less capable at generating text than the more complex transformer architectures, but our concern in this particular case is how well we eventually do sentiment classification.</p>
+
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing text_cell rendered">
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<h1 id="Fine-tune-model">
+<a class="anchor" href="#Fine-tune-model" aria-hidden="true"><span class="octicon octicon-link"></span></a>Fine tune model<a class="anchor-link" href="#Fine-tune-model"> </a>
+</h1>
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing text_cell rendered">
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<p>Now we are finally ready to fine tune our language model. We'll use the "standard" training regime from the documentation and the fast.ai courses. That is 1 epoch where only the linear layers in the head of the model are trainable, and finally 10 epochs with all layers unfrozen.</p>
+
+</div>
+</div>
+</div>
+    
+    
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="n">learn_lm</span><span class="o">.</span><span class="n">lr_find</span><span class="p">()</span>
+</pre></div>
+
+    </div>
+</div>
+</div>
+
+<div class="output_wrapper">
+<div class="output">
+
+<div class="output_area">
+
+
+<div class="output_html rendered_html output_subarea ">
+
+</div>
+
+</div>
+
+<div class="output_area">
+
+
+
+<div class="output_text output_subarea output_execute_result">
+<pre>SuggestedLRs(lr_min=0.02089296132326126, lr_steep=1.3182567499825382e-06)</pre>
+</div>
+
+</div>
+
+<div class="output_area">
+
+
+
+<div class="output_png output_subarea ">
+<img src="data:image/png;base64,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%0A">
+</div>
+
+</div>
+
+</div>
+</div>
+
+</div>
+    
+
+<div class="cell border-box-sizing text_cell rendered">
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<p>A learning rate of 1e-2 seem to be a safe choice:</p>
+
+</div>
+</div>
+</div>
+    
+    
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="n">learn_lm</span><span class="o">.</span><span class="n">fit_one_cycle</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mf">1e-2</span><span class="p">)</span>
+</pre></div>
+
+    </div>
+</div>
+</div>
+
+<div class="output_wrapper">
+<div class="output">
+
+<div class="output_area">
+
+
+<div class="output_html rendered_html output_subarea ">
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: left;">
+      <th>epoch</th>
+      <th>train_loss</th>
+      <th>valid_loss</th>
+      <th>accuracy</th>
+      <th>perplexity</th>
+      <th>time</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>0</td>
+      <td>4.189573</td>
+      <td>3.936918</td>
+      <td>0.315999</td>
+      <td>51.260372</td>
+      <td>02:35</td>
+    </tr>
+  </tbody>
+</table>
+</div>
+
+</div>
+
+</div>
+</div>
+
+</div>
+    
+
+<div class="cell border-box-sizing text_cell rendered">
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<p>Next we will unfreeze all layers and train for 10 epochs at a reduced learning rate. The idea is that once we unfreeze the lower layers of our model we should make smaller changes to avoid catastrophic forgetting. We will go for a leraning rate of 1e-3. One can always test if longer training improves results, but in this case we will simply assumes that 10 epochs is good enough.</p>
+
+</div>
+</div>
+</div>
+    
+    
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="n">learn_lm</span><span class="o">.</span><span class="n">unfreeze</span><span class="p">()</span>
+<span class="n">learn_lm</span><span class="o">.</span><span class="n">lr_find</span><span class="p">()</span>
+</pre></div>
+
+    </div>
+</div>
+</div>
+
+<div class="output_wrapper">
+<div class="output">
+
+<div class="output_area">
+
+
+<div class="output_html rendered_html output_subarea ">
+
+</div>
+
+</div>
+
+<div class="output_area">
+
+
+
+<div class="output_text output_subarea output_execute_result">
+<pre>SuggestedLRs(lr_min=0.0003019951749593019, lr_steep=6.309573450380412e-07)</pre>
+</div>
+
+</div>
+
+<div class="output_area">
+
+
+
+<div class="output_png output_subarea ">
+<img src="data:image/png;base64,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%0A">
+</div>
+
+</div>
+
+</div>
+</div>
+
+</div>
+    
+
+    
+    
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="n">learn_lm</span><span class="o">.</span><span class="n">fit_one_cycle</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="mf">1e-3</span><span class="p">)</span>
+</pre></div>
+
+    </div>
+</div>
+</div>
+
+<div class="output_wrapper">
+<div class="output">
+
+<div class="output_area">
+
+
+<div class="output_html rendered_html output_subarea ">
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: left;">
+      <th>epoch</th>
+      <th>train_loss</th>
+      <th>valid_loss</th>
+      <th>accuracy</th>
+      <th>perplexity</th>
+      <th>time</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>0</td>
+      <td>3.997230</td>
+      <td>3.822397</td>
+      <td>0.327288</td>
+      <td>45.713673</td>
+      <td>02:47</td>
+    </tr>
+    <tr>
+      <td>1</td>
+      <td>3.954266</td>
+      <td>3.777179</td>
+      <td>0.330856</td>
+      <td>43.692589</td>
+      <td>02:48</td>
+    </tr>
+    <tr>
+      <td>2</td>
+      <td>3.878042</td>
+      <td>3.725606</td>
+      <td>0.337251</td>
+      <td>41.496380</td>
+      <td>02:38</td>
+    </tr>
+    <tr>
+      <td>3</td>
+      <td>3.814440</td>
+      <td>3.686008</td>
+      <td>0.340614</td>
+      <td>39.885315</td>
+      <td>02:47</td>
+    </tr>
+    <tr>
+      <td>4</td>
+      <td>3.785215</td>
+      <td>3.656684</td>
+      <td>0.344700</td>
+      <td>38.732697</td>
+      <td>02:41</td>
+    </tr>
+    <tr>
+      <td>5</td>
+      <td>3.729483</td>
+      <td>3.635671</td>
+      <td>0.346845</td>
+      <td>37.927280</td>
+      <td>02:43</td>
+    </tr>
+    <tr>
+      <td>6</td>
+      <td>3.698734</td>
+      <td>3.618694</td>
+      <td>0.348383</td>
+      <td>37.288837</td>
+      <td>02:46</td>
+    </tr>
+    <tr>
+      <td>7</td>
+      <td>3.654537</td>
+      <td>3.607326</td>
+      <td>0.350624</td>
+      <td>36.867321</td>
+      <td>02:48</td>
+    </tr>
+    <tr>
+      <td>8</td>
+      <td>3.635801</td>
+      <td>3.602736</td>
+      <td>0.351033</td>
+      <td>36.698505</td>
+      <td>02:49</td>
+    </tr>
+    <tr>
+      <td>9</td>
+      <td>3.618312</td>
+      <td>3.601928</td>
+      <td>0.351133</td>
+      <td>36.668865</td>
+      <td>02:50</td>
+    </tr>
+  </tbody>
+</table>
+</div>
+
+</div>
+
+</div>
+</div>
+
+</div>
+    
+
+<div class="cell border-box-sizing text_cell rendered">
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<p></p>
+<div class="flash">
+    <svg class="octicon octicon-info octicon octicon-info" viewbox="0 0 14 16" version="1.1" width="14" height="16" aria-hidden="true"><path fill-rule="evenodd" d="M6.3 5.69a.942.942 0 01-.28-.7c0-.28.09-.52.28-.7.19-.18.42-.28.7-.28.28 0 .52.09.7.28.18.19.28.42.28.7 0 .28-.09.52-.28.7a1 1 0 01-.7.3c-.28 0-.52-.11-.7-.3zM8 7.99c-.02-.25-.11-.48-.31-.69-.2-.19-.42-.3-.69-.31H6c-.27.02-.48.13-.69.31-.2.2-.3.44-.31.69h1v3c.02.27.11.5.31.69.2.2.42.31.69.31h1c.27 0 .48-.11.69-.31.2-.19.3-.42.31-.69H8V7.98v.01zM7 2.3c-3.14 0-5.7 2.54-5.7 5.68 0 3.14 2.56 5.7 5.7 5.7s5.7-2.55 5.7-5.7c0-3.15-2.56-5.69-5.7-5.69v.01zM7 .98c3.86 0 7 3.14 7 7s-3.14 7-7 7-7-3.12-7-7 3.14-7 7-7z"></path></svg>
+    <strong>Note: </strong>We’re only training for about 30 minutes on a single GPU.
+</div>
+
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing text_cell rendered">
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<p>We will save the model and the encoder for future use. The <code>save()</code> method save objects to path/'models' by default. The encoder will be used in our classifier in the next post.</p>
+
+</div>
+</div>
+</div>
+    
+    
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="n">learn_lm</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="s1">'finetuned_model'</span><span class="p">)</span>
+<span class="n">learn_lm</span><span class="o">.</span><span class="n">save_encoder</span><span class="p">(</span><span class="s1">'finetuned_encoder'</span><span class="p">)</span>
+</pre></div>
+
+    </div>
+</div>
+</div>
+
+</div>
+    
+
+<div class="cell border-box-sizing text_cell rendered">
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<p>Is the model any good at predicting text?</p>
+
+</div>
+</div>
+</div>
+    
+    
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="n">TEXT</span> <span class="o">=</span> <span class="s2">"Denne filmen er et godt eksempel på"</span> <span class="c1"># this film is a good example of</span>
+<span class="n">preds</span> <span class="o">=</span> <span class="p">[</span><span class="n">learn_lm</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">TEXT</span><span class="p">,</span> <span class="mi">40</span><span class="p">,</span> <span class="n">temperature</span><span class="o">=</span><span class="mf">0.75</span><span class="p">)</span> <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">3</span><span class="p">)]</span>
+<span class="n">preds</span>
+</pre></div>
+
+    </div>
+</div>
+</div>
+
+<div class="output_wrapper">
+<div class="output">
+
+<div class="output_area">
+
+
+<div class="output_html rendered_html output_subarea ">
+
+</div>
+
+</div>
+
+<div class="output_area">
+
+
+<div class="output_html rendered_html output_subarea ">
+
+</div>
+
+</div>
+
+<div class="output_area">
+
+
+<div class="output_html rendered_html output_subarea ">
+
+</div>
+
+</div>
+
+<div class="output_area">
+
+
+
+<div class="output_text output_subarea output_execute_result">
+<pre>['xxunk denne filmen er et godt eksempel på hvordan serien er blitt laget med en amerikansk komedie . i filmen står det en tydelig og effektiv følelse av at en serie med tretten mennesker , som har mistet kontrollen over de to første episodene , har fått en',
+ 'xxunk denne filmen er et godt eksempel på hva som skjer når den kommer i nærheten av en tsunami . i verste fall skjer det med den virkelige verden , hvor det som skjer , er det som gjør at den blir rammet av et stadig forvirrende ,',
+ 'xxunk denne filmen er et godt eksempel på at det er vanskelig å forestille seg hva som egentlig foregår . i visse scener er dette en underholdende og ytterst underholdende film , i norsk forstand . JON GORE « the THAT IN']</pre>
+</div>
+
+</div>
+
+</div>
+</div>
+
+</div>
+    
+
+<div class="cell border-box-sizing text_cell rendered">
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<p>This is by no means as impressive as the recent transformer models, but the model certainly understands language fairly well. Also, our particular use case isn't really text generation, but sentiment classification. Transformers only do marginally better than ULMFiT according to <a href="https://paperswithcode.com/sota/sentiment-analysis-on-imdb">Papers with code</a> on the similar IMDB classification task. Classification will be the topic of an upcoming post.</p>
+
+</div>
+</div>
+</div>
+</div>
+
+
+
+  </div><!-- from https://github.com/utterance/utterances -->
+<script src="https://utteranc.es/client.js"
+        repo="hallvagi/dl-explorer"
+        issue-term="title"
+        label="blogpost-comment"
+        theme="github-light"
+        crossorigin="anonymous"
+        async>
+</script><a class="u-url" href="/dl-explorer/nlp/fastai/lstm/ulmfit/2020/04/20/ULMFiT_langmod.html" hidden></a>
+</article>
+      </div>
+    </main><footer class="site-footer h-card">
+  <data class="u-url" href="/dl-explorer/"></data>
+
+  <div class="wrapper">
+
+    <div class="footer-col-wrapper">
+      <div class="footer-col">
+        <p class="feed-subscribe">
+          <a href="/dl-explorer/feed.xml">
+            <svg class="svg-icon orange">
+              <use xlink:href="/dl-explorer/assets/minima-social-icons.svg#rss"></use>
+            </svg><span>Subscribe</span>
+          </a>
+        </p>
+      </div>
+      <div class="footer-col">
+        <p>Exploring deep learning and data science concepts.</p>
+      </div>
+    </div>
+
+    <div class="social-links"><ul class="social-media-list"><li><a rel="me" href="https://github.com/hallvagi" title="hallvagi"><svg class="svg-icon grey"><use xlink:href="/dl-explorer/assets/minima-social-icons.svg#github"></use></svg></a></li><li><a rel="me" href="https://twitter.com/HallvarGisnas" title="HallvarGisnas"><svg class="svg-icon grey"><use xlink:href="/dl-explorer/assets/minima-social-icons.svg#twitter"></use></svg></a></li><li><a rel="me" href="https://www.youtube.com/c%2FHallvarGisn%C3%A5s" title="c/HallvarGisnås"><svg class="svg-icon grey"><use xlink:href="/dl-explorer/assets/minima-social-icons.svg#youtube"></use></svg></a></li></ul>
+</div>
+
+  </div>
+
+</footer>
+</body>
+
+</html>

@@ -166,7 +166,7 @@ window.onload = wrap_img;
 </li>
 <li class="toc-entry toc-h1"><a href="#Attention">Attention </a>
 <ul>
-<li class="toc-entry toc-h2"><a href="#def-__(init)__():">def __(init)__(): </a>
+<li class="toc-entry toc-h2"><a href="#def-__init__():">def __init__(): </a>
 <ul>
 <li class="toc-entry toc-h3"><a href="#Why-are-Q,-K-and-V-conv-layers?">Why are Q, K and V conv layers? </a></li>
 <li class="toc-entry toc-h3"><a href="#Why-don't-we-scale-the-attention-scores?">Why don&#39;t we scale the attention scores? </a></li>
@@ -531,7 +531,7 @@ window.onload = wrap_img;
 <div class="inner_cell">
 <div class="text_cell_render border-box-sizing rendered_html">
 <blockquote>
-<p><strong>The target output should be the average height of the input for corresponding geometric shape:The two yellow squares represent the average height of the blue squares, and similary for the triangles.</strong></p>
+<p><strong>The target output should be the average height of the input for corresponding geometric shapes:The two yellow squares represent the average height of the blue squares, and similary for the triangles.</strong></p>
 </blockquote>
 
 </div>
@@ -1205,7 +1205,7 @@ epoch: 5000, loss: 0.0005493065691553056
 <li>
 <a href="http://www.peterbloem.nl/blog/transformers">Peter Bloem</a> has a nice from-scratch implementation of the transformer in PyTorch</li>
 <li>The <a href="https://nlp.seas.harvard.edu/2018/04/03/attention.html">annotated Transformer</a> by Harvard NLP, and the <a href="https://arxiv.org/abs/1706.03762">Attention is All You Need</a> paper</li>
-<li>The <a href="https://amaarora.github.io/2020/02/18/annotatedGPT2.html">annotated GPT-2</a> by Aman Aroa</li>
+<li>The <a href="https://amaarora.github.io/2020/02/18/annotatedGPT2.html">annotated GPT-2</a> by Aman Arora</li>
 </ol>
 <p>The rest of the post will assume a basic understanding of the concept of attention (specifically self-attention). Below is the implementation of an attention layer and the proposed model architecture - very similar to the above cnn architecture except for a new <code>AttentionLayer</code>. This code is once again written by François, but I added a few comments on intermediate tensor shapes. Let's go through it step by step.</p>
 
@@ -1276,8 +1276,8 @@ epoch: 5000, loss: 0.0005493065691553056
 <div class="cell border-box-sizing text_cell rendered">
 <div class="inner_cell">
 <div class="text_cell_render border-box-sizing rendered_html">
-<h2 id="def-__(init)__():">
-<a class="anchor" href="#def-__(init)__():" aria-hidden="true"><span class="octicon octicon-link"></span></a>def __(init)__():<a class="anchor-link" href="#def-__(init)__():"> </a>
+<h2 id="def-__init__():">
+<a class="anchor" href="#def-__init__():" aria-hidden="true"><span class="octicon octicon-link"></span></a>def __init__():<a class="anchor-link" href="#def-__init__():"> </a>
 </h2>
 </div>
 </div>

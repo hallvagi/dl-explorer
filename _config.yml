@@ -7,7 +7,7 @@
 # https://learnxinyminutes.com/docs/yaml/
 
 title: Deep learning explorer
-description: Exploring deep learning and data science concepts.
+description: Exploring deep learning and data science concepts. Built with [fastpages](https://github.com/fastai/fastpages).
 github_username: hallvagi
 # you can comment the below line out if your repo name is not different than your baseurl
 github_repo: "dl-explorer"
